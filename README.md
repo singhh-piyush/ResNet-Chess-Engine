@@ -1,6 +1,10 @@
 # ResNet Chess Engine (v2)
 
+**Demo:** [https://huggingface.co/spaces/singhh-piyush/ResNet-Chess-Engine](https://huggingface.co/spaces/singhh-piyush/ResNet-Chess-Engine)
+
 ResNet Chess Engine is a behavioral clone trained on 3,437 games (346,000+ positions). Unlike traditional engines that seek optimal play, this model replicates the intuition and pattern recognition of my playstyle while enforcing safety through a custom Veto system.
+
+## Interface
 
 ## Interface
 
