@@ -64,7 +64,7 @@ npm install
 npm run dev
 ```
 
-### 3. Quick Start (Linux)
+### 3. Quick Start
 If you are on a Unix-based system, you can initialize both the frontend and backend simultaneously using the provided script:
 
 ```bash
@@ -81,10 +81,10 @@ The model uses a dual-loss objective: Loss = PolicyLoss + 5.0 * ValueLoss. It us
 To train the engine on your own dataset:
 
 ```bash
-# 1. Parse your raw PGN games into 19-layer bitboards
+
 python data_miner.py
 
-# 2. Train the SE-ResNet15 model
+
 python train_model.py
 ```
 
