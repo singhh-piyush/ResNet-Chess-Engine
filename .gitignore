@@ -1,0 +1,9 @@
+venv/
+__pycache__/
+*.npz
+*.pth
+*.jsonl
+*.log
+.DS_Store
+node_modules/
+chess-frontend/dist/

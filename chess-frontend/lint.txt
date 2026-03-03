@@ -1,0 +1,115 @@
+
+> chess-frontend@0.0.0 lint
+> eslint .
+
+
+/home/amnesia/Desktop/github/ChessBotGithub/chess-frontend/src/App.jsx
+  170:16  error    Error: Cannot create components during render
+
+Components created during render will reset their state each time they are created. Declare components outside of render.
+
+  168 |             <div className="flex items-center justify-between">
+  169 |               <span className="text-text-primary text-sm">Brain Glow</span>
+> 170 |               <Toggle enabled={showGlow} onChange={() => setShowGlow(!showGlow)} />
+      |                ^^^^^^ This component is created during render
+  171 |             </div>
+  172 |             <div className="flex items-center justify-between">
+  173 |               <span className="text-text-primary text-sm">Show Analysis Panel</span>
+
+  140 |   };
+  141 |
+> 142 |   const Toggle = ({ enabled, onChange }) => (
+      |                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 143 |     <button
+      | ^^^^^^^^^^^
+> 144 |       onClick={onChange}
+      | ^^^^^^^^^^^
+> 145 |       className={`w-11 h-6 rounded-full flex items-center transition-colors p-1 ${enabled ? 'bg-accent justify-end' : 'bg-surface-200 justify-start'}`}
+      | ^^^^^^^^^^^
+> 146 |     >
+      | ^^^^^^^^^^^
+> 147 |       <div className="w-4 h-4 rounded-full bg-white" />
+      | ^^^^^^^^^^^
+> 148 |     </button>
+      | ^^^^^^^^^^^
+> 149 |   );
+      | ^^^^ The component is created during render here
+  150 |
+  151 |   return (
+  152 |     <div className="fixed inset-0 z-50 flex justify-end bg-surface/80 backdrop-blur-sm pointer-events-auto" onClick={handleClose}>                     react-hooks/static-components
+  174:16  error    Error: Cannot create components during render
+
+Components created during render will reset their state each time they are created. Declare components outside of render.
+
+  172 |             <div className="flex items-center justify-between">
+  173 |               <span className="text-text-primary text-sm">Show Analysis Panel</span>
+> 174 |               <Toggle enabled={showAnalysis} onChange={() => setShowAnalysis(!showAnalysis)} />
+      |                ^^^^^^ This component is created during render
+  175 |             </div>
+  176 |             <div className="flex items-center justify-between">
+  177 |               <span className="text-text-primary text-sm">Show Move History</span>
+
+  140 |   };
+  141 |
+> 142 |   const Toggle = ({ enabled, onChange }) => (
+      |                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 143 |     <button
+      | ^^^^^^^^^^^
+> 144 |       onClick={onChange}
+      | ^^^^^^^^^^^
+> 145 |       className={`w-11 h-6 rounded-full flex items-center transition-colors p-1 ${enabled ? 'bg-accent justify-end' : 'bg-surface-200 justify-start'}`}
+      | ^^^^^^^^^^^
+> 146 |     >
+      | ^^^^^^^^^^^
+> 147 |       <div className="w-4 h-4 rounded-full bg-white" />
+      | ^^^^^^^^^^^
+> 148 |     </button>
+      | ^^^^^^^^^^^
+> 149 |   );
+      | ^^^^ The component is created during render here
+  150 |
+  151 |   return (
+  152 |     <div className="fixed inset-0 z-50 flex justify-end bg-surface/80 backdrop-blur-sm pointer-events-auto" onClick={handleClose}>  react-hooks/static-components
+  178:16  error    Error: Cannot create components during render
+
+Components created during render will reset their state each time they are created. Declare components outside of render.
+
+  176 |             <div className="flex items-center justify-between">
+  177 |               <span className="text-text-primary text-sm">Show Move History</span>
+> 178 |               <Toggle enabled={showHistory} onChange={() => setShowHistory(!showHistory)} />
+      |                ^^^^^^ This component is created during render
+  179 |             </div>
+  180 |           </div>
+  181 |         </div>
+
+  140 |   };
+  141 |
+> 142 |   const Toggle = ({ enabled, onChange }) => (
+      |                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 143 |     <button
+      | ^^^^^^^^^^^
+> 144 |       onClick={onChange}
+      | ^^^^^^^^^^^
+> 145 |       className={`w-11 h-6 rounded-full flex items-center transition-colors p-1 ${enabled ? 'bg-accent justify-end' : 'bg-surface-200 justify-start'}`}
+      | ^^^^^^^^^^^
+> 146 |     >
+      | ^^^^^^^^^^^
+> 147 |       <div className="w-4 h-4 rounded-full bg-white" />
+      | ^^^^^^^^^^^
+> 148 |     </button>
+      | ^^^^^^^^^^^
+> 149 |   );
+      | ^^^^ The component is created during render here
+  150 |
+  151 |   return (
+  152 |     <div className="fixed inset-0 z-50 flex justify-end bg-surface/80 backdrop-blur-sm pointer-events-auto" onClick={handleClose}>                                                                                                                          react-hooks/static-components
+  270:10  error    'botEvaluation' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              no-unused-vars
+  271:10  error    'resignStreak' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               no-unused-vars
+  286:10  error    'thinkingLog' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                no-unused-vars
+  296:59  warning  React Hook useMemo has a missing dependency: 'game'. Either include it or remove the dependency array                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      react-hooks/exhaustive-deps
+  296:60  warning  React Hook useMemo has a complex expression in the dependency array. Extract it to a separate variable so it can be statically checked                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     react-hooks/exhaustive-deps
+  370:71  error    'is_fallback' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                no-unused-vars
+  494:14  error    'e' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              no-unused-vars
+
+✖ 10 problems (8 errors, 2 warnings)
+
