@@ -10,8 +10,8 @@ ResNet Chess Engine is a behavioral clone trained on 3,437 games (346,000+ posit
 
 ---
 
-## Technical Evolution
-This project has transitioned from a Stockfish-dependent wrapper (v1) to a fully custom neural architecture (v2):
+## Evolution
+This project has transitioned from a Stockfish dependent wrapper (v1) to a fully custom neural architecture (v2):
 * Custom Neural Backbone: 15-block Squeeze-and-Excitation ResNet.
 * Hardware Optimized: Developed on Arch Linux using CUDA-accelerated batched inference.
 * Responsive Interface: A React/Vite dashboard using Tailwind CSS and CSS Grid.
@@ -27,7 +27,7 @@ This project has transitioned from a Stockfish-dependent wrapper (v1) to a fully
 | Inference | Batched 1-Ply Search (Future positions processed as (K, 19, 8, 8) tensors) |
 | Input Encoding | 19-plane (8x8) tensor covering pieces, castling, en passant, and move data |
 
-### Veto-Blend Decision Logic
+### Veto Decision Logic
 1. Instinct Selection: The Policy Head identifies the Top 5 moves based on trained patterns.
 2. Tactical Injection: Legal captures are generated and sorted by material value.
 3. Parallel Evaluation: Up to 10 candidate moves are processed in a single GPU forward pass via the Value Head.
@@ -45,7 +45,7 @@ This project has transitioned from a Stockfish-dependent wrapper (v1) to a fully
 
 ---
 
-## Installation and Setup
+## Installation
 
 ### 1. Backend Server (FastAPI + PyTorch)
 Ensure you have Python 3.10+ installed. Open a terminal and run:
@@ -64,7 +64,7 @@ npm install
 npm run dev
 ```
 
-### 3. Quick Start (Linux / macOS)
+### 3. Quick Start (Linux)
 If you are on a Unix-based system, you can initialize both the frontend and backend simultaneously using the provided script:
 
 ```bash
@@ -90,7 +90,7 @@ python train_model.py
 
 ---
 
-## Training Pipeline
+## Training
 The model uses a dual-loss objective: Loss = PolicyLoss + 5.0 * ValueLoss.
 
 * Optimizer: OneCycleLR for rapid convergence during the 346k position training phase.
