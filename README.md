@@ -1,79 +1,102 @@
-# ♟️ MyChessBot
+# ResNet Chess Engine (v2)
 
-**A Dual-Head SE-ResNet15 engine with 1-ply Batched Tensor Search.**
+ResNet Chess Engine is a behavioral clone trained on 3,437 games (346,000+ positions). Unlike traditional engines that seek optimal play, this model replicates the intuition and pattern recognition of my playstyle while enforcing safety through a custom Veto system.
 
-A neural chess engine that doesn't play *optimal* chess — it plays like *me*. Trained on **3,437 of my own games** (346,000+ positions), this is a behavioral clone that replicates my intuition, pattern recognition, and my specific tactical blind spots.
+## Visual Interface
+
+![Splash Screen](screenshots/splashscreen.png)
+![Game Interface 1](screenshots/game.png)
+![Game Interface 2](screenshots/game2.png)
 
 ---
 
-## Architecture
+## Technical Evolution
+This project has transitioned from a Stockfish-dependent wrapper (v1) to a fully custom neural architecture (v2):
+* Custom Neural Backbone: 15-block Squeeze-and-Excitation ResNet.
+* Hardware Optimized: Developed on Arch Linux using CUDA-accelerated batched inference.
+* Responsive Interface: A React/Vite dashboard using Tailwind CSS and CSS Grid.
 
-| Component | Detail |
+---
+
+## Engine Architecture
+
+| Component | Engineering Detail |
 |---|---|
-| **Backbone** | SE-ResNet15 — 15 Residual Blocks with Squeeze-and-Excitation attention (192 channels) |
-| **Policy Head** | Outputs a 4096-logit probability distribution over all possible moves |
-| **Value Head** | Evaluates board positions on a [-1, +1] scale via Tanh activation |
-| **Input Encoding** | 19-plane (8×8) tensor: 12 piece planes, 4 castling rights, en passant, side-to-move, temporal encoding |
-| **Training Data** | 3,437 of my games → 346,000+ labeled positions with Stockfish evaluations |
+| Backbone | SE-ResNet15 (15 Residual Blocks, Squeeze-and-Excitation attention, 192 channels) |
+| Dual-Head | Policy Head (Move Probability) and Value Head (Position Evaluation) |
+| Inference | Batched 1-Ply Search (Future positions processed as (K, 19, 8, 8) tensors) |
+| Input Encoding | 19-plane (8x8) tensor covering pieces, castling, en passant, and move data |
 
-## How It Thinks
+### Veto-Blend Decision Logic
+1. Instinct Selection: The Policy Head identifies the Top 5 moves based on trained patterns.
+2. Tactical Injection: Legal captures are generated and sorted by material value.
+3. Parallel Evaluation: Up to 10 candidate moves are processed in a single GPU forward pass via the Value Head.
+4. The Veto: Moves that result in a position evaluation drop exceeding 100 centipawns (calculated via atanh scaling) are discarded.
+5. Move Execution: A weighted sample is taken from the surviving candidates to preserve style while preventing blunders.
 
-### 1. Policy Pruning (Instinct)
-The Policy Head scores all legal moves and extracts the **Top 5** by raw logit value. No temperature scaling at this stage — rank order is preserved to save compute.
-
-### 2. Tactical Capture Injection
-All legal captures are generated via `board.generate_legal_captures()`, sorted by target piece material value (Q > R > B > N > P), deduplicated against the instinct list, and injected into the candidate pool (capped at **10 total**).
-
-### 3. Batched 1-Ply Search
-Each candidate move is applied to a cloned board. The resulting future positions are converted to tensors and **stacked into a single `(K, 19, 8, 8)` batch**, passed through the Value Head in one forward call.
-
-### 4. Perspective Negation
-The Value Head reports how good the position is *for the side to move* — which, after our move, is the opponent. Each value is negated and converted to centipawns via `atanh(v) × 400` to get *our* advantage.
-
-### 5. Veto-Blend Selection
-Moves that fall more than **100 centipawns** below the best candidate are vetoed. Among survivors, temperature-scaled softmax is applied to the original Policy logits, and a move is sampled — preserving my personal style while enforcing tactical safety.
-
-## Limitations
-
-- **1-ply depth only.** The engine cannot see forced mates, pins that resolve in 2+ moves, or deep positional sacrifices.
-- **Behavioral clone.** It inherits my personal blind spots. If I never played the Sicilian, neither will the bot.
-- **No opening book.** Every move is computed from scratch via the neural network.
+---
 
 ## Tech Stack
 
-| Layer | Technology |
-|---|---|
-| **Model** | PyTorch (CUDA) |
-| **Backend** | FastAPI + Uvicorn |
-| **Frontend** | React + Vite + Tailwind CSS |
-| **Chess Logic** | python-chess (server) + chess.js (client) |
-| **Board UI** | react-chessboard |
+* AI/ML: PyTorch (CUDA), NumPy, SE-ResNet Architecture.
+* Backend: FastAPI, Uvicorn (Inference Server), Pydantic.
+* Frontend: React 18, Vite, Tailwind CSS, Lucide Icons.
+* Chess Logic: python-chess (server) and chess.js (client).
 
-## Running Locally
+---
+
+## Installation and Setup
+
+### 1. Backend Server (FastAPI + PyTorch)
+Ensure you have Python 3.10+ installed. Open a terminal and run:
 
 ```bash
-# Backend
-pip install fastapi uvicorn torch numpy python-chess
+pip install -r requirements.txt
 uvicorn main:app --host 0.0.0.0 --port 8000
+```
 
-# Frontend
+### 2. Frontend Application (React + Vite)
+Ensure you have Node.js installed. Open a second terminal window and run:
+
+```bash
 cd chess-frontend
 npm install
 npm run dev
 ```
 
-## Training
+### 3. Quick Start (Linux / macOS)
+If you are on a Unix-based system, you can initialize both the frontend and backend simultaneously using the provided script:
 
 ```bash
-# 1. Mine your PGN games into tensors
-python data_miner.py
-
-# 2. Train the model
-python train_model.py
+chmod +x run_project.sh
+./run_project.sh
 ```
-
-The training pipeline uses mixed-precision (FP16), OneCycleLR scheduling, label smoothing (0.1), and early stopping (patience 5). Dual loss: `policy_loss + 5.0 × value_loss`.
 
 ---
 
-*Created by [Piyush Singh](https://github.com/singhh-piyush)*
+## Training Your Own Clone
+
+The model uses a dual-loss objective: Loss = PolicyLoss + 5.0 * ValueLoss. It uses OneCycleLR for rapid convergence and label smoothing (0.1) to prevent over-fitting.
+
+To train the engine on your own dataset:
+
+```bash
+# 1. Parse your raw PGN games into 19-layer bitboards
+python data_miner.py
+
+# 2. Train the SE-ResNet15 model
+python train_model.py
+```
+
+---
+
+## Training Pipeline
+The model uses a dual-loss objective: Loss = PolicyLoss + 5.0 * ValueLoss.
+
+* Optimizer: OneCycleLR for rapid convergence during the 346k position training phase.
+* Data Processing: Raw PGN data is parsed into 19-layer bitboards via data_miner.py.
+* Performance: Batched tensor search allows for 1-ply depth with near-zero latency on modern GPUs.
+
+---
+
+Created by Piyush Singh
