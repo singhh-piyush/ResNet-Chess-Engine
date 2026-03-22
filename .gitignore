@@ -7,3 +7,10 @@ __pycache__/
 .DS_Store
 node_modules/
 chess-frontend/dist/
+
+# Ignore model weights
+*.pth
+*.bin
+*.safetensors
+# Ignore compiled frontend
+frontend_build/

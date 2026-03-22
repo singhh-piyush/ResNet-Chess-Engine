@@ -259,7 +259,6 @@ export default function App() {
   const [playerSide, setPlayerSide] = useState('white');
   const [gameStatus, setGameStatus] = useState('SPLASH');
 
-
   const [showGlow, setShowGlow] = useState(true);
   const [showAnalysis, setShowAnalysis] = useState(true);
   const [showHistory, setShowHistory] = useState(true);
@@ -268,7 +267,6 @@ export default function App() {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isInfoOpen, setIsInfoOpen] = useState(false);
   const [optionSquares, setOptionSquares] = useState({});
-
 
   const [botStats, setBotStats] = useState({
     confidence: 0,
@@ -293,7 +291,6 @@ export default function App() {
 
   const playerCaptured = playerSide === 'white' ? captured['w'] : captured['b'];
   const botCaptured = playerSide === 'white' ? captured['b'] : captured['w'];
-
 
 
   const checkGameOver = (gameInstance) => {
@@ -358,12 +355,11 @@ export default function App() {
     startThinkingAnimation();
 
     try {
-      const response = await axios.post('http://localhost:8000/predict', {
+      const response = await axios.post('/predict', {
         fen: currentFen,
       });
 
       const { move, confidence, evaluation, candidates, thinking_log, is_fallback } = response.data;
-
 
       if (response.data.resign) {
         setGameResult({ winner: playerSide, reason: 'Resignation' });
@@ -372,10 +368,14 @@ export default function App() {
         return;
       }
 
+      if (response.data.game_over || !move) {
+        stopThinkingAnimation(thinking_log);
+        setIsThinking(false);
+        return;
+      }
 
       if (evaluation !== undefined) {
         setBotEvaluation(evaluation);
-
         const botLosing = playerSide === 'white' ? evaluation > 5.0 : evaluation < -5.0;
         if (botLosing) {
           setResignStreak(prev => {
@@ -431,7 +431,6 @@ export default function App() {
   // Handle legal move highlights
   const highlightMoves = (square) => {
     const piece = game.get(square);
-
     if (!piece || piece.color !== playerSide[0]) {
       setOptionSquares({});
       return;
@@ -442,7 +441,6 @@ export default function App() {
       return;
     }
     const newSquares = {};
-
     newSquares[square] = { background: 'rgba(255, 255, 0, 0.4)' };
     moves.forEach((move) => {
       const target = game.get(move.to);
@@ -515,7 +513,7 @@ export default function App() {
   };
 
   useEffect(() => {
-    if (gameStatus === 'PLAYING' && playerSide === 'black' && game.turn() === 'w' && !isThinking) {
+    if (gameStatus === 'PLAYING' && playerSide === 'black' && game.turn() === 'w' && !isThinking && !game.isGameOver()) {
       makeBotMove(game.fen());
     }
   }, [gameStatus, playerSide, game]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -532,7 +530,7 @@ export default function App() {
 
   const handleOfferDraw = async () => {
     try {
-      const response = await axios.post('http://localhost:8000/offer_draw', {
+      const response = await axios.post('/offer_draw', {
         fen: game.fen(),
         user_side: playerSide
       });
@@ -562,7 +560,6 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-surface text-text-secondary font-sans flex flex-col overflow-hidden relative selection:bg-accent/30">
-
 
       <header className="h-14 bg-surface-50 border-b border-surface-200 flex items-center justify-between px-4 lg:px-6 z-40">
         <h1 className="text-base font-medium text-text-primary tracking-tight">
@@ -607,7 +604,6 @@ export default function App() {
         )}
       </header>
 
-
       {notification && (
         <Modal onClose={() => setNotification(null)}>
           <div className="animate-scale-in text-center">
@@ -624,14 +620,11 @@ export default function App() {
         </Modal>
       )}
 
-
       {gameStatus === 'SPLASH' && (
         <SplashScreen onStart={startGame} />
       )}
 
-
       <div className="flex-1 w-full flex flex-col items-center gap-6 p-4 px-6 overflow-y-auto h-auto lg:flex-row lg:justify-center lg:gap-12 lg:items-start lg:p-6 lg:px-12 lg:overflow-hidden lg:h-[800px]">
-
 
         <div className="w-full lg:w-auto lg:shrink-0 mt-0 lg:mt-10 order-3 lg:order-1">
           {showAnalysis && (
@@ -639,7 +632,6 @@ export default function App() {
               <div>
                 <div className="text-sm text-text-muted uppercase tracking-wide font-medium mb-3">Analysis</div>
               </div>
-
 
               <Tooltip text="How well this matches my playstyle">
                 <div className="space-y-2">
@@ -659,7 +651,6 @@ export default function App() {
                   </div>
                 </div>
               </Tooltip>
-
 
               <Tooltip text="Positive for White advantage, Negative for Black">
                 <div className="space-y-2">
@@ -685,7 +676,6 @@ export default function App() {
                   </div>
                 </div>
               </Tooltip>
-
 
               <div className="flex-1 flex flex-col overflow-hidden">
                 <div className="flex items-center justify-between mb-3">
@@ -723,7 +713,6 @@ export default function App() {
                               </div>
                             </div>
                           </div>
-
                           <div className="flex items-center justify-between text-xs font-mono">
                             <span className="text-text-muted">
                               Instinct: <span className={c.status === 'SELECTED' ? 'text-accent' : 'text-text-secondary'}>{(c.confidence * 100).toFixed(1)}%</span>
@@ -734,7 +723,6 @@ export default function App() {
                               </span>
                             )}
                           </div>
-
                           <div className="w-full h-1.5 bg-surface-200 rounded-full overflow-hidden">
                             <div
                               className={`h-full rounded-full transition-all duration-300 ${(c.evaluation || 0) > 0 ? 'bg-emerald-500' : (c.evaluation || 0) < 0 ? 'bg-red-500' : 'bg-slate-500'
@@ -766,10 +754,8 @@ export default function App() {
           )}
         </div>
 
-
         <div className="flex flex-col items-center mt-0 lg:mt-10 order-1 lg:order-2 w-full lg:w-auto lg:shrink-0">
           <div className="flex flex-col items-center gap-2 w-full lg:w-[600px] shrink-0">
-
 
             <div className="w-full flex items-center justify-start h-8 pl-1">
               <div className="flex items-center gap-0.5">
@@ -792,7 +778,6 @@ export default function App() {
                 })()}
               </div>
             </div>
-
 
             <div className="relative z-10 w-full aspect-square">
               <div className={`gemini-glow-effect layer-1 ${isThinking && showGlow ? 'active' : ''}`} />
@@ -821,7 +806,6 @@ export default function App() {
               </div>
             </div>
 
-
             <div className="w-full flex items-center justify-start h-8 pl-1">
               <div className="flex items-center gap-0.5">
                 {playerCaptured.map((piece, i) => (
@@ -844,7 +828,6 @@ export default function App() {
               </div>
             </div>
 
-
             <div className={`flex gap-4 mt-4 h-12 items-center justify-center w-full transition-opacity duration-300 ${gameStatus === 'PLAYING' ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
               <button
                 onClick={handleOfferDraw}
@@ -862,7 +845,6 @@ export default function App() {
 
           </div>
         </div>
-
 
 
         <div className="w-full lg:w-auto lg:shrink-0 mt-0 lg:mt-10 order-2 lg:order-3">
@@ -906,7 +888,6 @@ export default function App() {
       </div>
 
 
-
       {gameStatus === 'GAME_OVER' && gameResult && (
         <Modal onClose={() => setGameStatus('SPLASH')}>
           <div className="animate-scale-in text-center">
@@ -932,7 +913,6 @@ export default function App() {
           </div>
         </Modal>
       )}
-
 
       {gameStatus === 'REVIEW' && (
         <div className="fixed bottom-6 right-6 z-50 animate-scale-in">

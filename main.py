@@ -1,6 +1,8 @@
 import fastapi
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
 import torch
 import torch.nn as nn
@@ -98,7 +100,7 @@ class ChessModel(nn.Module):
 def board_to_tensor(board):
     tensor = np.zeros((19, 8, 8), dtype=np.float32)
     piece_map = {
-        chess.PAWN: 0, chess.KNIGHT: 1, chess.BISHOP: 2,
+        chess.PAWN: 0, chess.KNIGHT: 1, chess.BISHOP: 2, 
         chess.ROOK: 3, chess.QUEEN: 4, chess.KING: 5
     }
     for square in chess.SQUARES:
@@ -140,13 +142,14 @@ def decode_move(move_idx):
     to_sq = move_idx % 64
     return chess.Move(from_sq, to_sq)
 
+
 model = None
 
 @contextlib.asynccontextmanager
 async def lifespan(app: FastAPI):
     global model
     print("Initializing Backend...")
-
+    
     if os.path.exists(MODEL_PATH):
         try:
             model = ChessModel()
@@ -159,7 +162,7 @@ async def lifespan(app: FastAPI):
             model = None
     else:
         print(f"Model not found at {MODEL_PATH}")
-
+    
     yield
 
 app = FastAPI(lifespan=lifespan)
@@ -167,7 +170,6 @@ app = FastAPI(lifespan=lifespan)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -278,10 +280,10 @@ async def predict(request: FenRequest):
 
     for i, cand in enumerate(top_candidates):
         raw_val = virtual_values[i].item()
-        # atanh scaling logic.
-        raw_val = max(min(raw_val, 0.999), -0.999)
+        raw_val = max(min(raw_val, 0.999), -0.999)  # atanh scaling logic.
         cp = math.atanh(raw_val) * 400.0
         cand["simulated_eval_cp"] = -cp
+
 
     best_eval_cp = max(c["simulated_eval_cp"] for c in top_candidates)
 
@@ -390,6 +392,15 @@ async def offer_draw(request: DrawRequest):
     else:
         return {"accepted": False, "message": "I'd like to play on."}
 
+
+app.mount("/assets", StaticFiles(directory="frontend_build/assets"), name="assets")
+app.mount("/TakenPiecesSVG", StaticFiles(directory="frontend_build/TakenPiecesSVG"), name="TakenPiecesSVG")
+
+@app.get("/{catchall:path}")
+async def read_index(catchall: str):
+    return FileResponse("frontend_build/index.html")
+
+
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(app, host="0.0.0.0", port=7860)

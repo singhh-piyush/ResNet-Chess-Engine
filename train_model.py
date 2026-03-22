@@ -27,9 +27,11 @@ TARGETS_FILE = 'targets.npz'
 EVALS_FILE = 'evals.npz'
 MODEL_SAVE_BEST = 'chess_clone.pth'
 MODEL_SAVE_FINAL = 'chess_clone_final.pth'
-NUM_WORKERS = 4
+NUM_WORKERS = 4  # Parallel data loading threads
 
+# --- Squeeze-and-Excitation Block ---
 class SEBlock(nn.Module):
+    """Learns per-channel importance weights (e.g., 'castling plane matters here')."""
     def __init__(self, channels, reduction=8):
         super().__init__()
         self.pool = nn.AdaptiveAvgPool2d(1)
@@ -46,6 +48,7 @@ class SEBlock(nn.Module):
         w = self.fc(w).view(b, c, 1, 1)
         return x * w
 
+# --- Residual Block with SE + Dropout2d ---
 class ResidualBlock(nn.Module):
     def __init__(self, channels):
         super().__init__()
@@ -53,7 +56,7 @@ class ResidualBlock(nn.Module):
         self.bn1 = nn.BatchNorm2d(channels)
         self.conv2 = nn.Conv2d(channels, channels, kernel_size=3, padding=1, bias=False)
         self.bn2 = nn.BatchNorm2d(channels)
-        self.drop2d = nn.Dropout2d(DROPOUT2D)
+        self.drop2d = nn.Dropout2d(DROPOUT2D)  # Drop entire feature maps
         self.se = SEBlock(channels)
         self.relu = nn.ReLU(inplace=True)
 
@@ -61,26 +64,30 @@ class ResidualBlock(nn.Module):
         residual = x
         out = self.relu(self.bn1(self.conv1(x)))
         out = self.bn2(self.conv2(out))
-        out = self.drop2d(out)
-        out = self.se(out)
-        out += residual
+        out = self.drop2d(out)        # Dropout2d after bn2, before SE
+        out = self.se(out)            # SE weighting before skip add
+        out += residual               # Skip connection
         out = self.relu(out)
         return out
 
+# --- Model (SE-ResNet with Dual Heads) ---
 class ChessModel(nn.Module):
     def __init__(self, num_res_blocks=NUM_RES_BLOCKS, channels=CHANNELS):
         super().__init__()
 
+        # Input projection: 19 input planes -> feature maps
         self.input_conv = nn.Sequential(
             nn.Conv2d(INPUT_PLANES, channels, kernel_size=3, padding=1, bias=False),
             nn.BatchNorm2d(channels),
             nn.ReLU(inplace=True)
         )
 
+        # Residual tower: SE-ResBlocks with Dropout2d and skip connections
         self.res_tower = nn.Sequential(
             *[ResidualBlock(channels) for _ in range(num_res_blocks)]
         )
 
+        # Policy head: predicts move probabilities (4096 possible moves)
         self.policy_head = nn.Sequential(
             nn.Conv2d(channels, 32, kernel_size=1, bias=False),
             nn.BatchNorm2d(32),
@@ -90,6 +97,7 @@ class ChessModel(nn.Module):
             nn.Linear(32 * 8 * 8, 4096)
         )
 
+        # Value head: predicts position evaluation [-1, 1]
         self.value_head = nn.Sequential(
             nn.Conv2d(channels, 1, kernel_size=1, bias=False),
             nn.BatchNorm2d(1),
@@ -109,6 +117,7 @@ class ChessModel(nn.Module):
         value = self.value_head(x)
         return policy, value
 
+# --- Dataset ---
 class ChessDataset(Dataset):
     def __init__(self):
         print("Loading data...")
@@ -126,6 +135,7 @@ class ChessDataset(Dataset):
     def __getitem__(self, idx):
         return self.inputs[idx], self.targets[idx], self.evals[idx]
 
+# --- Training ---
 def main():
     if not os.path.exists(INPUTS_FILE) or not os.path.exists(TARGETS_FILE) or not os.path.exists(EVALS_FILE):
         print("Data files not found! Run data_miner.py first.")
@@ -136,6 +146,7 @@ def main():
         print(f"GPU: {torch.cuda.get_device_name(0)}")
         print(f"VRAM: {torch.cuda.get_device_properties(0).total_memory / 1e9:.1f} GB")
 
+    # 1. Prepare Data
     full_dataset = ChessDataset()
 
     total_size = len(full_dataset)
@@ -152,6 +163,7 @@ def main():
         pin_memory=True, num_workers=NUM_WORKERS, persistent_workers=True
     )
 
+    # 2. Setup Model, Loss, Optimizer, Scheduler
     model = ChessModel().to(DEVICE)
     criterion_policy = nn.CrossEntropyLoss(label_smoothing=LABEL_SMOOTHING)
     criterion_value = nn.MSELoss()
@@ -159,6 +171,7 @@ def main():
     scheduler = OneCycleLR(optimizer, max_lr=LEARNING_RATE,
                            steps_per_epoch=len(train_loader), epochs=EPOCHS)
 
+    # AMP: Automatic Mixed Precision (FP16 on GPU for ~2x speed)
     scaler = GradScaler('cuda', enabled=(DEVICE.type == 'cuda'))
 
     best_val_loss = float('inf')
@@ -172,6 +185,7 @@ def main():
     print(f"Early Stopping: patience={EARLY_STOP_PATIENCE}")
     print("-" * 70)
 
+    # 3. Training Loop
     for epoch in range(EPOCHS):
         model.train()
         running_policy_loss = 0.0
@@ -185,20 +199,22 @@ def main():
         for inputs, targets, evals in loop:
             inputs = inputs.to(DEVICE, non_blocking=True)
             targets = targets.to(DEVICE, non_blocking=True)
-            evals = evals.to(DEVICE, non_blocking=True).view(-1, 1)
+            evals = evals.to(DEVICE, non_blocking=True).view(-1, 1)  # [B] -> [B,1] to prevent broadcasting trap
 
             optimizer.zero_grad(set_to_none=True)
 
+            # AMP forward pass
             with autocast('cuda', enabled=(DEVICE.type == 'cuda')):
                 policy_out, value_out = model(inputs)
                 policy_loss = criterion_policy(policy_out, targets)
                 value_loss = criterion_value(value_out, evals)
                 total_loss = policy_loss + VALUE_LAMBDA * value_loss
 
+            # AMP backward pass
             scaler.scale(total_loss).backward()
             scaler.step(optimizer)
             scaler.update()
-            scheduler.step()
+            scheduler.step()  # OneCycleLR steps per batch, not per epoch
 
             running_policy_loss += policy_loss.item()
             running_value_loss += value_loss.item()
@@ -217,6 +233,7 @@ def main():
 
         current_lr = scheduler.get_last_lr()[0]
 
+        # Validation
         model.eval()
         val_policy_loss = 0.0
         val_value_loss = 0.0
@@ -252,6 +269,7 @@ def main():
               f"Val [P={avg_val_policy:.4f} V={avg_val_value:.4f} T={avg_val_total:.4f} Acc={val_acc:.2f}%] | "
               f"LR={current_lr:.6f}")
 
+        # Save Best + Early Stopping
         if avg_val_total < best_val_loss:
             best_val_loss = avg_val_total
             early_stop_counter = 0
@@ -264,6 +282,7 @@ def main():
                 print(f"Early stopping triggered at epoch {epoch+1}.")
                 break
 
+    # 4. Save Final
     torch.save(model.state_dict(), MODEL_SAVE_FINAL)
     print(f"Training Complete. Final model saved to {MODEL_SAVE_FINAL}")
 
