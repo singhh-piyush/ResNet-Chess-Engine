@@ -319,12 +319,11 @@ export default function App() {
   };
 
   const safeGameMutate = (modify) => {
-    setGame((g) => {
-      const update = new Chess();
-      for (const uci of uciHistory.current) update.move(uci);
-      modify(update);
-      return update;
-    });
+    const update = new Chess();
+    for (const uci of uciHistory.current) update.move(uci);
+    modify(update);
+    latestFen.current = update.fen();
+    setGame(update);
   };
 
   const stopThinkingAnimation = (finalLogs) => {
