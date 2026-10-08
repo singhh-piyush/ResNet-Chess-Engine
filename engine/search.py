@@ -18,8 +18,9 @@ def terminal(board, ply=0):
 
 
 class Search:
-    def __init__(self, runtime, seconds=9.5, node_limit=4096, max_depth=4, cancelled=None):
+    def __init__(self, runtime, seconds=9.5, node_limit=4096, max_depth=4, cancelled=None, rng=None):
         self.runtime = runtime
+        self.rng = rng if rng is not None else np.random.default_rng()
         self.seconds = min(seconds, 9.5)
         self.limit = node_limit
         self.max_depth = max_depth
@@ -134,7 +135,7 @@ class Search:
         survivor_logits = self.runtime.logits(board, policy, survivors)/.8
         probs = np.exp(survivor_logits-survivor_logits.max())
         probs /= probs.sum()
-        chosen = survivors[np.random.default_rng().choice(len(survivors),p=probs)]
+        chosen = survivors[self.rng.choice(len(survivors),p=probs)]
         probabilities = np.exp(logits-logits.max()); probabilities /= probabilities.sum()
         white_sign = 1 if board.turn else -1
         elapsed = round((time.monotonic()-self.started)*1000)

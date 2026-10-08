@@ -45,7 +45,7 @@ def main():
     rows=suite('data/labels','data/split.json',args.suite,args.count)
     output=Path(args.output);output.parent.mkdir(parents=True,exist_ok=True)
     config={'baseline_sha256':hashlib.sha256(Path(args.baseline).read_bytes()).hexdigest(),'candidate_sha256':hashlib.sha256(Path(args.candidate).read_bytes()).hexdigest(),
-            'suite_sha256':hashlib.sha256(Path(args.suite).read_bytes()).hexdigest(),'seconds':args.seconds,'nodes':args.nodes}
+            'suite_sha256':hashlib.sha256(Path(args.suite).read_bytes()).hexdigest(),'seconds':args.seconds,'nodes':args.nodes,'sampling_seed':'sha256(game_id:ply)'}
     config_path=output.with_suffix('.config.json')
     if config_path.exists() and json.loads(config_path.read_text())!=config:raise ValueError('Evaluation configuration changed; use a new output')
     config_path.write_text(json.dumps(config,indent=2))
@@ -63,7 +63,7 @@ def main():
             for name,runtime in runtimes.items():
                 policy,_=runtime.evaluate([board])[0]
                 legal=list(board.legal_moves);ranked=sorted(legal,key=lambda m:runtime.logits(board,policy,[m])[0],reverse=True)
-                start=time.monotonic();chosen=Search(runtime,seconds=args.seconds).run(board);elapsed=time.monotonic()-start
+                start=time.monotonic();chosen=Search(runtime,seconds=args.seconds,rng=np.random.default_rng(int(hashlib.sha256(key.encode()).hexdigest()[:16],16))).run(board);elapsed=time.monotonic()-start
                 move=chess.Move.from_uci(chosen['move']);child=board.copy();child.push(move)
                 post=score(child);loss=max(0,best+post)
                 result[name]={'loss_cp':loss,'blunder':loss>150,'style_top1':ranked[0].uci()==row['played_move'],

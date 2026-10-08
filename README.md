@@ -49,9 +49,9 @@ Stockfish is only an offline teacher and evaluator. It is never in the runtime i
 venv/bin/python -m training.download
 venv/bin/python -m training.mine --workers 4
 venv/bin/python -m training.split
-venv/bin/python -m training.train --batch 64
+venv/bin/python -m training.train --batch 256
 # Resume an interrupted run with the identical dataset:
-venv/bin/python -m training.train --batch 64 --resume
+venv/bin/python -m training.train --batch 256 --resume
 ```
 
 All standard games and time controls are included and deduplicated. Labels use 20,000 Stockfish nodes, one engine thread per worker, no reflected boards, value targets on both turns, and policy targets only on the user's moves losing at most 150 cp. Every row includes game provenance. Mining is atomic per game and resumable. `data/split.json` is frozen and preserves the legacy fold-0 holdout when its archived game IDs are available.

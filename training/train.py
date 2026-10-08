@@ -9,7 +9,7 @@ import numpy as np
 import torch
 from torch import nn
 from torch.utils.data import DataLoader, Dataset
-from engine.encoding import board_to_tensor, POLICY_SIZE
+from engine.encoding import board_to_tensor, POLICY_SIZE, PROMOTIONS
 from engine.model import ChessModel
 from training.split import prepare
 
@@ -36,8 +36,10 @@ def losses(policy,value,targets,values):
 
 def main():
     p=argparse.ArgumentParser();p.add_argument('--labels',default='data/labels');p.add_argument('--output',default='data/run')
-    p.add_argument('--epochs',type=int,default=30);p.add_argument('--batch',type=int,default=64);p.add_argument('--resume',action='store_true')
+    p.add_argument('--epochs',type=int,default=30);p.add_argument('--batch',type=int,default=256);p.add_argument('--resume',action='store_true')
     args=p.parse_args();torch.manual_seed(42);np.random.seed(42);random.seed(42)
+    torch.set_num_threads(4)
+    torch.backends.cudnn.benchmark=True
     device='cuda' if torch.cuda.is_available() else 'cpu'
     if device!='cuda':raise SystemExit('CUDA unavailable; run training where the GPU is accessible')
     split=prepare(labels=args.labels)
@@ -51,8 +53,12 @@ def main():
     for key,value in baseline.items():
         if state[key].shape==value.shape:state[key]=value
         elif key.startswith('policy_head.6.'):state[key][:4096]=value
+    for index,move in enumerate(PROMOTIONS,4096):
+        old_index=move.from_square*64+move.to_square
+        state['policy_head.6.weight'][index]=baseline['policy_head.6.weight'][old_index]
+        state['policy_head.6.bias'][index]=baseline['policy_head.6.bias'][old_index]-(0 if move.promotion==chess.QUEEN else 2)
     model.load_state_dict(state)
-    optimizer=torch.optim.AdamW(model.parameters(),lr=.0001,weight_decay=.0001)
+    optimizer=torch.optim.AdamW(model.parameters(),lr=.0001,weight_decay=.0001,fused=True)
     scaler=torch.amp.GradScaler('cuda');start=0;best=float('inf');stale=0
     split_hash=hashlib.sha256(Path('data/split.json').read_bytes()).hexdigest()
     dataset_hash=hashlib.sha256(''.join(hashlib.sha256(p.read_bytes()).hexdigest() for p in sorted(Path(args.labels).glob('*.jsonl'))).encode()).hexdigest()
@@ -60,7 +66,7 @@ def main():
         saved=torch.load(output/'resume.pth',map_location=device,weights_only=True)
         if saved['split_sha256']!=split_hash or saved['dataset_sha256']!=dataset_hash:raise ValueError('Resume dataset differs')
         model.load_state_dict(saved['model']);optimizer.load_state_dict(saved['optimizer']);scaler.load_state_dict(saved['scaler'])
-        start=saved['epoch']+1;best=saved['best'];stale=saved['stale'];torch.set_rng_state(saved['rng_cpu'].cpu());torch.cuda.set_rng_state_all(saved['rng_cuda'])
+        start=saved['epoch']+1;best=saved['best'];stale=saved['stale'];torch.set_rng_state(saved['rng_cpu'].cpu());torch.cuda.set_rng_state_all([s.cpu() for s in saved['rng_cuda']])
     for epoch in range(start,args.epochs):
         model.train();total=0
         for i,(inputs,targets,values) in enumerate(loaders['train']):
