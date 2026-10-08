@@ -39,3 +39,19 @@ def test_frozen_game_split(tmp_path):
     second=prepare(labels,path,legacy=tmp_path/'absent')
     assert all(second['games'][k]==v for k,v in first['games'].items())
     assert set(second['games'].values())=={'train','validation','test'}
+
+
+def test_baseline_initialization_preserves_policy_and_promotions():
+    from engine.model import ChessModel
+    from engine.encoding import PROMOTIONS
+    from training.train import initialize_from_baseline
+    baseline=ChessModel(num_res_blocks=0,channels=8,policy_size=4096).state_dict()
+    candidate=ChessModel(num_res_blocks=0,channels=8)
+    initialize_from_baseline(candidate,baseline)
+    state=candidate.state_dict()
+    assert torch.equal(state['policy_head.5.weight'][:4096],baseline['policy_head.5.weight'])
+    for index,move in enumerate(PROMOTIONS,4096):
+        old=move.from_square*64+move.to_square
+        assert torch.equal(state['policy_head.5.weight'][index],baseline['policy_head.5.weight'][old])
+        expected=baseline['policy_head.5.bias'][old]-(0 if move.promotion==chess.QUEEN else 2)
+        assert state['policy_head.5.bias'][index]==expected

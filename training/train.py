@@ -34,6 +34,23 @@ def losses(policy,value,targets,values):
     return style+5*evaluation
 
 
+def initialize_from_baseline(model,baseline):
+    state=model.state_dict()
+    if set(state)!=set(baseline):raise ValueError('Baseline architecture keys differ')
+    for key,value in baseline.items():
+        if state[key].shape==value.shape:
+            state[key]=value
+        elif key in ('policy_head.5.weight','policy_head.5.bias') and value.shape[0]==4096:
+            state[key][:4096]=value
+        else:
+            raise ValueError(f'Incompatible baseline parameter: {key}')
+    for index,move in enumerate(PROMOTIONS,4096):
+        old_index=move.from_square*64+move.to_square
+        state['policy_head.5.weight'][index]=baseline['policy_head.5.weight'][old_index]
+        state['policy_head.5.bias'][index]=baseline['policy_head.5.bias'][old_index]-(0 if move.promotion==chess.QUEEN else 2)
+    model.load_state_dict(state)
+
+
 def main():
     p=argparse.ArgumentParser();p.add_argument('--labels',default='data/labels');p.add_argument('--output',default='data/run')
     p.add_argument('--epochs',type=int,default=30);p.add_argument('--batch',type=int,default=256);p.add_argument('--resume',action='store_true')
@@ -49,15 +66,7 @@ def main():
     # Initialize shared representation from the verified old fold-0 baseline. The
     # promotion head is new; unrelated policy rows keep their existing weights.
     baseline=torch.load('models/legacy-cv0.pth',map_location=device,weights_only=True)
-    state=model.state_dict()
-    for key,value in baseline.items():
-        if state[key].shape==value.shape:state[key]=value
-        elif key.startswith('policy_head.6.'):state[key][:4096]=value
-    for index,move in enumerate(PROMOTIONS,4096):
-        old_index=move.from_square*64+move.to_square
-        state['policy_head.6.weight'][index]=baseline['policy_head.6.weight'][old_index]
-        state['policy_head.6.bias'][index]=baseline['policy_head.6.bias'][old_index]-(0 if move.promotion==chess.QUEEN else 2)
-    model.load_state_dict(state)
+    initialize_from_baseline(model,baseline)
     optimizer=torch.optim.AdamW(model.parameters(),lr=.0001,weight_decay=.0001,fused=True)
     scaler=torch.amp.GradScaler('cuda');start=0;best=float('inf');stale=0
     split_hash=hashlib.sha256(Path('data/split.json').read_bytes()).hexdigest()
