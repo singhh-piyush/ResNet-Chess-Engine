@@ -1,0 +1,40 @@
+name: Test and deploy to Hugging Face
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+  id-token: write
+concurrency:
+  group: hf-space-production
+  cancel-in-progress: false
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: chess-frontend/package-lock.json
+      - name: Install CPU backend and validation dependencies
+        run: |
+          pip install torch==2.10.0 --index-url https://download.pytorch.org/whl/cpu
+          pip install -r requirements-dev.txt 'huggingface_hub>=1.19.0,<2'
+      - name: Download immutable active checkpoint
+        run: |
+          python -c "import json; from huggingface_hub import hf_hub_download; m=json.load(open('models/release.json')); hf_hub_download('singhh-piyush/ResNet-Chess-Engine', 'models/'+m['path'], repo_type='space', local_dir='.')"
+      - name: Backend checks
+        run: python -m pytest -q
+      - name: Build interface
+        working-directory: chess-frontend
+        run: npm ci && npm run build
+      - name: Sync verified application code
+        env:
+          HF_OIDC_RESOURCE: spaces/singhh-piyush/ResNet-Chess-Engine
+        run: HF_TOKEN="$(hf auth token)" python scripts/sync_space.py --revision "$GITHUB_SHA"

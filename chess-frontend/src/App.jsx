@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useMemo } from 'react';
 import { Chess } from 'chess.js';
 import { Chessboard } from 'react-chessboard';
 import axios from 'axios';
+import { searchPosition, API_BASE } from './api';
 import Tooltip from './components/Tooltip';
 import SplashScreen from './SplashScreen';
 
@@ -278,7 +279,11 @@ export default function App() {
 
 
   const [thinkingLog, setThinkingLog] = useState([]);
-  const thinkingInterval = useRef(null);
+  const searchController = useRef(null);
+  const latestFen = useRef(game.fen());
+  latestFen.current = game.fen();
+  const uciHistory = useRef([]);
+  useEffect(() => () => searchController.current?.abort(), []);
   const moveListRef = useRef(null);
 
   useEffect(() => {
@@ -315,49 +320,31 @@ export default function App() {
 
   const safeGameMutate = (modify) => {
     setGame((g) => {
-      const update = new Chess(g.fen());
+      const update = new Chess();
+      for (const uci of uciHistory.current) update.move(uci);
       modify(update);
       return update;
     });
   };
 
-  const startThinkingAnimation = () => {
-    setThinkingLog(["Neural Net initialized.", "Scanning patterns..."]);
-    let stage = 0;
-    const stages = [
-      "Scanning board state...",
-      "Policy pruning top moves...",
-      "Simulating futures...",
-      "Value Head calculating...",
-      "Selecting best move..."
-    ];
-    if (thinkingInterval.current) clearInterval(thinkingInterval.current);
-    thinkingInterval.current = setInterval(() => {
-      if (stage < stages.length) {
-        setThinkingLog(prev => [...prev.slice(-5), stages[stage]]);
-        stage++;
-      }
-    }, 800);
-  };
-
   const stopThinkingAnimation = (finalLogs) => {
-    if (thinkingInterval.current) clearInterval(thinkingInterval.current);
-    if (finalLogs && finalLogs.length > 0) {
-      setThinkingLog(finalLogs.slice(-6));
-    } else {
-      setThinkingLog(prev => [...prev, "Execution complete."]);
-    }
+    if (finalLogs?.length) setThinkingLog(finalLogs.slice(-6));
   };
 
   const makeBotMove = async (currentFen) => {
-    const startTime = Date.now();
+    if (searchController.current) return;
+    const controller = new AbortController();
+    searchController.current = controller;
     setIsThinking(true);
-    startThinkingAnimation();
+    setThinkingLog(['Connecting to engine...']);
 
     try {
-      const response = await axios.post('/predict', {
-        fen: currentFen,
+      const data = await searchPosition({ fen: currentFen, moves: [...uciHistory.current] }, {
+        signal: controller.signal,
+        onProgress: (progress) => setThinkingLog(prev => [...prev.slice(-5), progress.message]),
       });
+      if (controller.signal.aborted || latestFen.current !== currentFen) return;
+      const response = { data };
 
       const { move, confidence, evaluation, candidates, thinking_log, is_fallback } = response.data;
 
@@ -401,12 +388,6 @@ export default function App() {
         bgLog: thinking_log || [],
       });
 
-      const MINIMUM_THINK_TIME = 1500;
-      const elapsed = Date.now() - startTime;
-      if (elapsed < MINIMUM_THINK_TIME) {
-        await new Promise(resolve => setTimeout(resolve, MINIMUM_THINK_TIME - elapsed));
-      }
-
       stopThinkingAnimation(thinking_log);
 
       safeGameMutate((game) => {
@@ -415,16 +396,23 @@ export default function App() {
         const promotion = move.length > 4 ? move.substring(4) : 'q';
         const result = game.move({ from, to, promotion });
         if (result) {
+          uciHistory.current.push(result.from + result.to + (result.promotion || ''));
           setMoveHistory(prev => [...prev, result.san]);
         }
         checkGameOver(game);
       });
 
     } catch (err) {
-      console.error("Bot Error:", err);
-      setIsThinking(false);
+      if (err.name !== 'AbortError') {
+        console.error("Bot Error:", err);
+        setThinkingLog([err.message]);
+        setNotification({ type: 'error', message: err.message });
+      }
     } finally {
-      setIsThinking(false);
+      if (searchController.current === controller) {
+        searchController.current = null;
+        setIsThinking(false);
+      }
     }
   };
 
@@ -467,7 +455,8 @@ export default function App() {
     if (isThinking) return false;
     if (game.turn() !== playerSide[0]) return false;
 
-    const gameCopy = new Chess(game.fen());
+    const gameCopy = new Chess();
+    for (const uci of uciHistory.current) gameCopy.move(uci);
     try {
       const move = gameCopy.move({
         from: sourceSquare,
@@ -476,6 +465,8 @@ export default function App() {
       });
       if (move === null) return false;
 
+      uciHistory.current.push(move.from + move.to + (move.promotion || ''));
+      latestFen.current = gameCopy.fen();
       setGame(gameCopy);
       setMoveHistory(prev => [...prev, move.san]);
 
@@ -501,6 +492,10 @@ export default function App() {
   };
 
   const startGame = (side) => {
+    searchController.current?.abort();
+    searchController.current = null;
+    uciHistory.current = [];
+    setIsThinking(false);
     setPlayerSide(side);
     setGame(new Chess());
     setMoveHistory([]);
@@ -524,13 +519,14 @@ export default function App() {
   const [notification, setNotification] = useState(null);
 
   const handleResign = () => {
+    searchController.current?.abort();
     setGameResult({ winner: playerSide === 'white' ? 'black' : 'white', reason: 'Resignation' });
     setGameStatus('GAME_OVER');
   };
 
   const handleOfferDraw = async () => {
     try {
-      const response = await axios.post('/offer_draw', {
+      const response = await axios.post(`${API_BASE}/offer_draw`, {
         fen: game.fen(),
         user_side: playerSide
       });

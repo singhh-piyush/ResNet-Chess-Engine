@@ -1,16 +1,19 @@
-venv/
+/archive/
+/data/
+/models/*.pth
+/models/candidate*.json
+/venv/
+/.venv/
+/.aws/
+/.claude/
+/.agents/
+/.codex/
 __pycache__/
-*.npz
-*.pth
-*.jsonl
+*.py[cod]
 *.log
-.DS_Store
-node_modules/
+.pytest_cache/
+chess-frontend/node_modules/
 chess-frontend/dist/
-
-# Ignore model weights
-*.pth
-*.bin
-*.safetensors
-# Ignore compiled frontend
-frontend_build/
+.env
+.env.*
+!.env.example

@@ -1,0 +1,14 @@
+.git
+archive
+data
+venv
+.venv
+.aws
+.agents
+.claude
+.codex
+**/__pycache__
+**/node_modules
+**/dist
+.env*
+*.log
