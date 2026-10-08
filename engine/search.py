@@ -109,6 +109,7 @@ class Search:
             children.append(child)
         # Batched shallow evaluations provide a legal fallback before deeper iterations.
         evaluated = self.runtime.evaluate(children)
+        self.nodes = 1 + len(children)
         scores = {m: -(terminal(c,1) if terminal(c,1) is not None else result[1]) for m,c,result in zip(root,children,evaluated)}
         completed = 1
         def report():
