@@ -90,7 +90,7 @@ const InfoModal = ({ onClose }) => {
           <div>
             <h4 className="text-accent font-medium mb-2">Architecture</h4>
             <p>
-              Trained on <strong className="text-text-primary">3,437</strong> of my chess games (346,000+ positions). Powered by a custom <strong className="text-text-primary">Dual-Head SE-ResNet15</strong> neural network.
+              Learns from my personal game archive. Powered by a custom <strong className="text-text-primary">Dual-Head SE-ResNet15</strong> neural network.
             </p>
           </div>
 
@@ -109,7 +109,7 @@ const InfoModal = ({ onClose }) => {
                   <span className="relative z-10">The Value Head (Calculation):</span>
                   <span className="absolute bottom-0.5 left-0 w-full h-2 bg-blue-500/20 -z-10 rounded-sm"></span>
                 </strong><br />
-                Simulates those specific candidate moves 1-ply into the future, evaluating the resulting board geometry from the opponent's perspective to prevent 1-move blunders.
+                Searches candidate moves and tactical replies, using neural estimates to favor safer moves. Checkmate and draw positions are evaluated exactly.
               </p>
             </div>
           </div>
@@ -117,7 +117,7 @@ const InfoModal = ({ onClose }) => {
           <div>
             <h4 className="text-accent font-medium mb-2">Limitations</h4>
             <p>
-              The bot only calculates 1 move ahead. It relies on instinct and short-range tactics, not deep algorithmic search. It is blind to forced mates and complex, multi-move defensive sequences.
+              Search runs for up to ten seconds. The engine can still miss tactics; its scores are neural estimates, and retrained models must pass independent checks before release.
             </p>
           </div>
 

@@ -1,35 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
-
-const CountUp = ({ end, duration = 1500, suffix = '', decimals = 0 }) => {
-    const [count, setCount] = useState(0);
-    const startTime = useRef(null);
-
-    useEffect(() => {
-        let animationFrame;
-        const animate = (timestamp) => {
-            if (!startTime.current) startTime.current = timestamp;
-            const progress = timestamp - startTime.current;
-            const easeOutExpo = (x) => (x === 1 ? 1 : 1 - Math.pow(2, -10 * x));
-            const percentage = Math.min(progress / duration, 1);
-            const currentVal = easeOutExpo(percentage) * end;
-            setCount(currentVal);
-            if (progress < duration) {
-                animationFrame = requestAnimationFrame(animate);
-            } else {
-                setCount(end);
-            }
-        };
-        animationFrame = requestAnimationFrame(animate);
-        return () => cancelAnimationFrame(animationFrame);
-    }, [end, duration]);
-
-    const formatted = count.toLocaleString(undefined, {
-        minimumFractionDigits: decimals,
-        maximumFractionDigits: decimals
-    });
-
-    return <span>{formatted}{suffix}</span>;
-};
+import { useState } from 'react';
 
 const SplashScreen = ({ onStart }) => {
     const [isExiting, setIsExiting] = useState(false);
@@ -56,27 +25,27 @@ const SplashScreen = ({ onStart }) => {
                 <div className="flex flex-col lg:flex-row items-center justify-center gap-3 lg:gap-8 mb-8 lg:mb-12 text-center">
                     <div>
                         <div className="text-lg lg:text-2xl font-semibold text-text-primary font-mono">
-                            <CountUp end={3437} />
+                            Personal
                         </div>
-                        <div className="text-[10px] lg:text-[11px] text-text-muted uppercase tracking-wide mt-0.5">Games</div>
+                        <div className="text-[10px] lg:text-[11px] text-text-muted uppercase tracking-wide mt-0.5">Play style</div>
                     </div>
 
                     <div className="w-16 lg:w-px h-px lg:h-8 bg-surface-200" />
 
                     <div>
                         <div className="text-lg lg:text-2xl font-semibold text-text-primary font-mono">
-                            <CountUp end={346216} />
+                            Neural
                         </div>
-                        <div className="text-[10px] lg:text-[11px] text-text-muted uppercase tracking-wide mt-0.5">Samples</div>
+                        <div className="text-[10px] lg:text-[11px] text-text-muted uppercase tracking-wide mt-0.5">Move search</div>
                     </div>
 
                     <div className="w-16 lg:w-px h-px lg:h-8 bg-surface-200" />
 
                     <div>
                         <div className="text-lg lg:text-2xl font-semibold text-accent font-mono">
-                            <CountUp end={43.02} decimals={2} suffix="%" />
+                            Estimated
                         </div>
-                        <div className="text-[10px] lg:text-[11px] text-text-muted uppercase tracking-wide mt-0.5">Accuracy</div>
+                        <div className="text-[10px] lg:text-[11px] text-text-muted uppercase tracking-wide mt-0.5">Scores</div>
                     </div>
                 </div>
 
