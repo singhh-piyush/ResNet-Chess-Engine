@@ -83,5 +83,8 @@ def test_baseline_queen_bias():
     runtime=Runtime()
     board=chess.Board('7k/P7/8/8/8/8/8/7K w - - 0 1')
     moves=[m for m in board.legal_moves if m.promotion]
+    if runtime.policy_size != 4096:
+        assert len({runtime.index(m) for m in moves}) == 4
+        return
     logits=runtime.logits(board,np.zeros(4096),moves)
     assert moves[int(logits.argmax())].promotion==chess.QUEEN

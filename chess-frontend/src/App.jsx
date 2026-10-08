@@ -451,7 +451,7 @@ export default function App() {
   const onDrop = (sourceSquare, targetSquare) => {
     setOptionSquares({});
     if (gameStatus !== 'PLAYING') return false;
-    if (isThinking) return false;
+    if (isThinking || searchController.current) return false;
     if (game.turn() !== playerSide[0]) return false;
 
     const gameCopy = new Chess();
@@ -751,6 +751,9 @@ export default function App() {
 
         <div className="flex flex-col items-center mt-0 lg:mt-10 order-1 lg:order-2 w-full lg:w-auto lg:shrink-0">
           <div className="flex flex-col items-center gap-2 w-full lg:w-[600px] shrink-0">
+            <p role="status" aria-live="polite" className="text-xs text-text-muted min-h-4">
+              {thinkingLog.at(-1) || 'Ready to play'}
+            </p>
 
             <div className="w-full flex items-center justify-start h-8 pl-1">
               <div className="flex items-center gap-0.5">
