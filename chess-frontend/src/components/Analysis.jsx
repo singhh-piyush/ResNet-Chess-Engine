@@ -5,7 +5,7 @@ import { formatScore, verdict } from '../lib/chess';
 import Count from './Count';
 import Tip from './Tip';
 
-export const MAX_DEPTH = 4;
+export const MAX_DEPTH = 8;
 const W = 200, H = 56, PAD = 6;
 const toY = score => PAD + (0.5 - 0.5 * Math.tanh(score / 3)) * (H - PAD * 2);
 
@@ -14,6 +14,7 @@ const STATUS = {
   ANALYZED: ['Close', 'Within a pawn of the best line, so it stayed in the running.'],
   VETOED: ['Dropped', 'More than a pawn worse than the best line once ResNet looked ahead.'],
 };
+const BOOK_ALTERNATIVE = ['Book', 'Another move I have played in this position.'];
 
 /** Smooth path through the points (Catmull-Rom converted to cubic curves). */
 function smooth(points) {
@@ -124,7 +125,7 @@ function Search({ thinking, progress, search, timer, leader, stats, budget }) {
   const has = thinking || stats;
   const state = thinking
     ? progress?.phase === 'connecting' ? 'Connecting' : progress?.phase === 'waiting' ? 'Waiting for a free engine' : 'Thinking'
-    : stats ? 'Last move' : 'Idle';
+    : stats ? stats.book ? 'Book move' : 'Last move' : 'Idle';
   const seconds = stats ? stats.elapsed_ms / 1000 : 0;
   return (
     <section className="block search" aria-label="Search">
@@ -167,7 +168,7 @@ function Search({ thinking, progress, search, timer, leader, stats, budget }) {
         >
           {thinking
             ? leader?.san ? <>Leaning toward <strong>{leader.san}</strong></> : 'Reading the position'
-            : stats ? <>Played <strong>{stats.lastSan}</strong><span className="muted"> · {Math.round(stats.confidence * 100)}% instinct</span></> : 'Starts when it is ResNet’s turn'}
+            : stats ? <>Played <strong>{stats.lastSan}</strong><span className="muted"> · {stats.book ? 'one of my openings' : `${Math.round(stats.confidence * 100)}% instinct`}</span></> : 'Starts when it is ResNet’s turn'}
         </motion.p>
       </AnimatePresence>
     </section>
@@ -192,7 +193,7 @@ function Candidates({ stats, thinking, botColor }) {
               bar glides from its old length to the new one, so the list brightens instead of blinking. */}
           <ol className="cand-list">
             {rows.map((row, i) => {
-              const [label, why] = STATUS[row.status] || STATUS.ANALYZED;
+              const [label, why] = stats.book && row.status !== 'SELECTED' ? BOOK_ALTERNATIVE : STATUS[row.status] || STATUS.ANALYZED;
               return (
                 <Tip key={i} content={<><strong>{label}.</strong> {why}</>}>
                   <li className={`cand ${row.status?.toLowerCase()}`} tabIndex={0}>

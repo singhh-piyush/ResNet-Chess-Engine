@@ -19,7 +19,7 @@ import Hero from './components/Hero';
 import ResultCard from './components/ResultCard';
 import Tip from './components/Tip';
 
-const BUDGET_MS = 9500;
+const BUDGET_MS = 3000;
 const RANK_WEIGHT = [1, 0.5, 0.32];
 const DROPPED_WEIGHT = 0.18;
 const STORAGE_KEY = 'rce-settings';
@@ -506,11 +506,12 @@ export default function App() {
               <div className="about">
                 <p className="lede">I’m Piyush Singh. ResNet plays chess the way I do.</p>
                 <p>A 15-block residual network studied 3,451 of my games. For any position it estimates two things: how likely I am to play each move, and how good the position is.</p>
-                <p>On its turn it looks up to four moves ahead for at most 9.5 seconds. It then picks among the moves within a pawn of the best one, favoring the ones I’d be likeliest to choose. So it sometimes prefers a move that feels like mine over the strongest one.</p>
+                <p>In openings I know well it plays one of my usual moves straight away. Otherwise it looks ahead for up to 3 seconds, usually about one. It then picks among the moves within a pawn of the best one, favoring the ones I’d be likeliest to choose. So it sometimes prefers a move that feels like mine over the strongest one.</p>
                 <dl className="glossary">
                   <div><dt>Evaluation</dt><dd>Estimated advantage in pawns. Above zero favors White.</dd></div>
                   <div><dt>Instinct</dt><dd>How likely I am to play a move, before looking ahead.</dd></div>
                   <div><dt>Depth</dt><dd>How many moves ahead the search has looked.</dd></div>
+                  <div><dt>Book</dt><dd>An opening move I have played here before, chosen without searching.</dd></div>
                   <div><dt>Positions</dt><dd>Positions checked during the search.</dd></div>
                 </dl>
                 <p className="note">Evaluations are estimates, and it can miss tactics.</p>

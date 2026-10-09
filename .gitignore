@@ -1,6 +1,8 @@
 /archive/
 /data/
 /models/*.pth
+/models/*.onnx
+/models/student-*.json
 /models/candidate*.json
 /venv/
 /.venv/

@@ -1,4 +1,5 @@
 import json
+import math
 import time
 import chess
 import numpy as np
@@ -100,3 +101,62 @@ def test_live_previews_are_legal_and_preserve_position():
         assert all(chess.Move.from_uci(move) in board.legal_moves for move in event['preview_moves'])
     assert board.fen()==original
     assert chess.Move.from_uci(result['move']) in board.legal_moves
+
+
+class MaterialRuntime(FakeRuntime):
+    """Deterministic evaluator: material balance from the side to move, policy prefers captures."""
+    values={chess.PAWN:100,chess.KNIGHT:300,chess.BISHOP:310,chess.ROOK:500,chess.QUEEN:900,chess.KING:0}
+    def evaluate(self,boards):
+        results=[]
+        for board in boards:
+            score=sum(self.values[p.piece_type]*(1 if p.color==board.turn else -1) for p in board.piece_map().values())
+            policy=np.zeros(POLICY_SIZE)
+            for move in board.legal_moves:policy[encode_move(move)]=(move.from_square*7+move.to_square)%11
+            results.append((policy,float(score)))
+        return results
+
+
+class NoTable(dict):
+    def __setitem__(self,key,value):pass
+
+
+TACTICAL=('r1bq1rk1/ppp2ppp/2np1n2/2b1p3/2B1P3/2NP1N2/PPP2PPP/R1BQ1RK1 w - - 0 7',
+          'r2qk2r/ppp2ppp/2n1bn2/2bpp3/4P3/2PP1N2/PP1NBPPP/R1BQK2R w KQkq - 0 7',
+          'r3k2r/pp1n1ppp/2p1pn2/q2p4/2PP4/2N1PN2/PPQ2PPP/R3KB1R w KQkq - 0 10')
+
+
+@pytest.mark.parametrize('fen',TACTICAL)
+def test_windowed_tt_search_matches_full_window(fen,monkeypatch):
+    from engine import search
+    def scores(full):
+        if full:monkeypatch.setattr(search,'MARGIN',10**9)
+        else:monkeypatch.setattr(search,'MARGIN',100)
+        engine=Search(MaterialRuntime(),seconds=math.inf,max_depth=3,rng=np.random.default_rng(0))
+        if full:engine.table=NoTable()
+        result=engine.run(chess.Board(fen))
+        assert result['depth']==3
+        return {c['move']:(c['evaluation'],c['status']) for c in result['candidates']}
+    reference=scores(True);windowed=scores(False)
+    best=max(e for e,_ in reference.values())
+    for move,(evaluation,_) in reference.items():
+        if best-evaluation<=1:
+            # Survivors keep their exact score; everything else must be vetoed.
+            assert windowed[move][0]==evaluation
+        else:
+            assert windowed[move][1]=='VETOED'
+
+
+def test_hard_cap_bounds_slow_evaluator():
+    class Slow(FakeRuntime):
+        def evaluate(self,boards):
+            time.sleep(.01);return super().evaluate(boards)
+    start=time.monotonic()
+    result=Search(Slow(),seconds=.2,hard_seconds=.3).run(chess.Board())
+    assert time.monotonic()-start<.5
+    assert chess.Move.from_uci(result['move']) in chess.Board().legal_moves
+
+
+def test_single_legal_move_returns_immediately():
+    board=chess.Board('7k/8/8/8/8/8/6q1/7K w - - 0 1')
+    result=Search(MaterialRuntime(),seconds=5).run(board)
+    assert result['move']=='h1g2' and result['depth']==1

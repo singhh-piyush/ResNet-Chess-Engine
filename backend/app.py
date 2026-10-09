@@ -17,6 +17,13 @@ from engine.search import Search
 runtime = None
 load_error = None
 busy = threading.Lock()
+# Soft budget: no search iteration starts that cannot finish in time. Hard cap: abort.
+SEARCH_SECONDS = float(os.getenv('SEARCH_SECONDS', '2.0'))
+SEARCH_HARD_SECONDS = float(os.getenv('SEARCH_HARD_SECONDS', '3.0'))
+
+
+def new_search(engine, cancelled):
+    return Search(engine, seconds=SEARCH_SECONDS, hard_seconds=SEARCH_HARD_SECONDS, cancelled=cancelled)
 
 
 @contextlib.asynccontextmanager
@@ -90,7 +97,7 @@ async def predict(request: FenRequest):
     cancelled = threading.Event()
     def cancellable_work():
         try:
-            return Search(engine,cancelled=cancelled.is_set).run(board)
+            return new_search(engine,cancelled.is_set).run(board)
         finally:
             busy.release()
     try:
@@ -114,7 +121,7 @@ async def stream(request: FenRequest):
     def work():
         try:
             send('started',{'message':'Search started','model_version':engine.version})
-            result = Search(engine,cancelled=cancelled.is_set).run(board,lambda p:send('progress',p))
+            result = new_search(engine,cancelled.is_set).run(board,lambda p:send('progress',p))
             send('result',result)
         except Exception:
             logging.exception('Search failed')

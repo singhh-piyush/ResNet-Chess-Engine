@@ -1,0 +1,11 @@
+{
+  "path": "legacy-cv0.pth",
+  "sha256": "20ebe44f3cb6b8aa39ccf4fa11cbeec7dd897b2a0489b59a32e010e86a76523e",
+  "policy_size": 4096,
+  "version": "legacy-cv0",
+  "architecture": {
+    "num_res_blocks": 15,
+    "channels": 192
+  },
+  "quality_status": "baseline-only; retraining gate pending"
+}

@@ -1,0 +1,159 @@
+{
+ "version": 1,
+ "months": 18,
+ "minimum": 3,
+ "positions": {
+  "r1bqk1nr/pppp1ppp/2n5/2b1p3/4P3/2P2N2/PP1P1PPP/RNBQKB1R w KQkq -": {
+   "d2d4": 7
+  },
+  "r1bqk1nr/pppp1ppp/2n5/2b5/3pP3/2P2N2/PP3PPP/RNBQKB1R w KQkq -": {
+   "c3d4": 6
+  },
+  "r1bqk1nr/pppp1ppp/2n5/8/1b1PP3/5N2/PP3PPP/RNBQKB1R w KQkq -": {
+   "b1c3": 3
+  },
+  "r1bqkb1r/pp2nppp/2n1p3/1BppP3/3P4/2P2N2/PP3PPP/RNBQK2R b KQkq -": {
+   "e7f5": 3
+  },
+  "r1bqkb1r/pppp1ppp/2n2n2/4p3/4P3/2P2N2/PP1P1PPP/RNBQKB1R w KQkq -": {
+   "d2d4": 15
+  },
+  "r1bqkb1r/pppp1ppp/2n2n2/8/3pP3/2P2N2/PP3PPP/RNBQKB1R w KQkq -": {
+   "c3d4": 9,
+   "e4e5": 3
+  },
+  "r1bqkb1r/pppp1ppp/2n5/8/3Pn3/5N2/PP3PPP/RNBQKB1R w KQkq -": {
+   "f1d3": 4
+  },
+  "r1bqkbnr/pp3ppp/2n1p3/1BppP3/3P4/5N2/PPP2PPP/RNBQK2R b KQkq -": {
+   "g8e7": 3
+  },
+  "r1bqkbnr/pp3ppp/2n1p3/2ppP3/3P4/2P2N2/PP3PPP/RNBQKB1R b KQkq -": {
+   "g8e7": 6
+  },
+  "r1bqkbnr/ppp2ppp/2n5/3pp3/4P3/2P2N2/PP1P1PPP/RNBQKB1R w KQkq -": {
+   "d2d4": 3
+  },
+  "r1bqkbnr/ppp2ppp/2nPp3/8/3P4/8/PPP2PPP/RNBQKBNR b KQkq -": {
+   "f8d6": 3
+  },
+  "r1bqkbnr/ppp2ppp/2np4/4p3/4P3/2P2N2/PP1P1PPP/RNBQKB1R w KQkq -": {
+   "d2d4": 6
+  },
+  "r1bqkbnr/ppp2ppp/2np4/8/3pP3/2P2N2/PP3PPP/RNBQKB1R w KQkq -": {
+   "c3d4": 3
+  },
+  "r1bqkbnr/pppp1ppp/2n1p3/4P3/3P4/8/PPP2PPP/RNBQKBNR b KQkq -": {
+   "d7d6": 3
+  },
+  "r1bqkbnr/pppp1ppp/2n5/4p3/4P3/2P5/PP1P1PPP/RNBQKBNR w KQkq -": {
+   "d2d4": 3
+  },
+  "r1bqkbnr/pppp1ppp/2n5/4p3/4P3/5N2/PPPP1PPP/RNBQKB1R w KQkq -": {
+   "c2c3": 30
+  },
+  "r1bqkbnr/pppp1ppp/2n5/8/3pP3/2P5/PP3PPP/RNBQKBNR w KQkq -": {
+   "c3d4": 3
+  },
+  "r2qkbnr/ppp2ppp/2np4/4p3/3PP1b1/2P2N2/PP3PPP/RNBQKB1R w KQkq -": {
+   "d4d5": 4
+  },
+  "rnb1kbnr/ppp1pppp/8/3q4/8/8/PPPP1PPP/RNBQKBNR w KQkq -": {
+   "b1c3": 4
+  },
+  "rnb1kbnr/pppp1ppp/5q2/4p3/4P3/5N2/PPPP1PPP/RNBQKB1R w KQkq -": {
+   "c2c3": 4
+  },
+  "rnbqkb1r/pppp1ppp/5n2/4p3/4P3/5N2/PPPP1PPP/RNBQKB1R w KQkq -": {
+   "c2c3": 5
+  },
+  "rnbqkbnr/pp1ppppp/2p5/8/4P3/8/PPPP1PPP/RNBQKBNR w KQkq -": {
+   "g1f3": 5
+  },
+  "rnbqkbnr/pp3ppp/4p3/2ppP3/3P4/2P5/PP3PPP/RNBQKBNR b KQkq -": {
+   "b8c6": 8
+  },
+  "rnbqkbnr/pp3ppp/4p3/2ppP3/3P4/5N2/PPP2PPP/RNBQKB1R b KQkq -": {
+   "b8c6": 9
+  },
+  "rnbqkbnr/ppp1pppp/8/3p4/4P3/8/PPPP1PPP/RNBQKBNR w KQkq -": {
+   "b1c3": 3,
+   "e4d5": 9
+  },
+  "rnbqkbnr/ppp1pppp/8/8/4p3/2N5/PPPP1PPP/R1BQKBNR w KQkq -": {
+   "c3e4": 3
+  },
+  "rnbqkbnr/ppp2ppp/3p4/4p3/4P3/5N2/PPPP1PPP/RNBQKB1R w KQkq -": {
+   "c2c3": 9
+  },
+  "rnbqkbnr/ppp2ppp/4p3/3P4/2B5/8/PPPP1PPP/RNBQK1NR b KQkq -": {
+   "e6d5": 6
+  },
+  "rnbqkbnr/ppp2ppp/4p3/3P4/3P4/8/PPP2PPP/RNBQKBNR b KQkq -": {
+   "e6d5": 3
+  },
+  "rnbqkbnr/ppp2ppp/4p3/3P4/8/5N2/PPPP1PPP/RNBQKB1R b KQkq -": {
+   "e6d5": 11
+  },
+  "rnbqkbnr/ppp2ppp/4p3/3pP3/3P4/8/PPP2PPP/RNBQKBNR b KQkq -": {
+   "c7c5": 13
+  },
+  "rnbqkbnr/ppp2ppp/4p3/3pP3/8/5N2/PPPP1PPP/RNBQKB1R b KQkq -": {
+   "c7c5": 10
+  },
+  "rnbqkbnr/ppp2ppp/8/3p4/8/1B6/PPPP1PPP/RNBQK1NR b KQkq -": {
+   "c7c5": 3
+  },
+  "rnbqkbnr/pppp1ppp/4p3/4P3/8/8/PPPP1PPP/RNBQKBNR b KQkq -": {
+   "b8c6": 3,
+   "d7d5": 4
+  },
+  "rnbqkbnr/pppp1ppp/4p3/8/2B1P3/8/PPPP1PPP/RNBQK1NR b KQkq -": {
+   "d7d5": 7
+  },
+  "rnbqkbnr/pppp1ppp/4p3/8/2PP4/8/PP2PPPP/RNBQKBNR b KQkq -": {
+   "d7d5": 6
+  },
+  "rnbqkbnr/pppp1ppp/4p3/8/3P4/2P5/PP2PPPP/RNBQKBNR b KQkq -": {
+   "d7d5": 3
+  },
+  "rnbqkbnr/pppp1ppp/4p3/8/3P4/5N2/PPP1PPPP/RNBQKB1R b KQkq -": {
+   "d7d5": 4
+  },
+  "rnbqkbnr/pppp1ppp/4p3/8/3PP3/8/PPP2PPP/RNBQKBNR b KQkq -": {
+   "d7d5": 22
+  },
+  "rnbqkbnr/pppp1ppp/4p3/8/4P3/5N2/PPPP1PPP/RNBQKB1R b KQkq -": {
+   "d7d5": 23
+  },
+  "rnbqkbnr/pppp1ppp/4p3/8/4P3/8/PPPP1PPP/RNBQKBNR w KQkq -": {
+   "f2f4": 3,
+   "g1f3": 4
+  },
+  "rnbqkbnr/pppp1ppp/4p3/8/8/1P6/PBPPPPPP/RN1QKBNR b KQkq -": {
+   "d7d5": 3
+  },
+  "rnbqkbnr/pppp1ppp/8/4p3/4P3/5N2/PPPP1PPP/RNBQKB1R b KQkq -": {
+   "b8c6": 3
+  },
+  "rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq -": {
+   "g1f3": 57
+  },
+  "rnbqkbnr/pppppppp/8/8/2P5/8/PP1PPPPP/RNBQKBNR b KQkq -": {
+   "e7e6": 3
+  },
+  "rnbqkbnr/pppppppp/8/8/3P4/8/PPP1PPPP/RNBQKBNR b KQkq -": {
+   "e7e6": 18
+  },
+  "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq -": {
+   "e7e5": 4,
+   "e7e6": 67
+  },
+  "rnbqkbnr/pppppppp/8/8/8/1P6/P1PPPPPP/RNBQKBNR b KQkq -": {
+   "e7e6": 3
+  },
+  "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq -": {
+   "e2e4": 105
+  }
+ }
+}

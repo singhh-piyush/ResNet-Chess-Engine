@@ -19,13 +19,13 @@ class SEBlock(nn.Module):
         return x * w
 
 class ResidualBlock(nn.Module):
-    def __init__(self, channels):
+    def __init__(self, channels, dropout=0.2):
         super().__init__()
         self.conv1 = nn.Conv2d(channels, channels, kernel_size=3, padding=1, bias=False)
         self.bn1 = nn.BatchNorm2d(channels)
         self.conv2 = nn.Conv2d(channels, channels, kernel_size=3, padding=1, bias=False)
         self.bn2 = nn.BatchNorm2d(channels)
-        self.drop2d = nn.Dropout2d(0.2)
+        self.drop2d = nn.Dropout2d(dropout)
         self.se = SEBlock(channels)
         self.relu = nn.ReLU(inplace=True)
 
@@ -40,7 +40,7 @@ class ResidualBlock(nn.Module):
         return out
 
 class ChessModel(nn.Module):
-    def __init__(self, num_res_blocks=15, channels=192, policy_size=4272):
+    def __init__(self, num_res_blocks=15, channels=192, policy_size=4272, policy_channels=32, block_dropout=0.2, head_dropout=0.5):
         super().__init__()
         self.input_conv = nn.Sequential(
             nn.Conv2d(19, channels, kernel_size=3, padding=1, bias=False),
@@ -48,15 +48,15 @@ class ChessModel(nn.Module):
             nn.ReLU(inplace=True)
         )
         self.res_tower = nn.Sequential(
-            *[ResidualBlock(channels) for _ in range(num_res_blocks)]
+            *[ResidualBlock(channels, block_dropout) for _ in range(num_res_blocks)]
         )
         self.policy_head = nn.Sequential(
-            nn.Conv2d(channels, 32, kernel_size=1, bias=False),
-            nn.BatchNorm2d(32),
+            nn.Conv2d(channels, policy_channels, kernel_size=1, bias=False),
+            nn.BatchNorm2d(policy_channels),
             nn.ReLU(inplace=True),
             nn.Flatten(),
-            nn.Dropout(0.5),
-            nn.Linear(32 * 8 * 8, policy_size)
+            nn.Dropout(head_dropout),
+            nn.Linear(policy_channels * 8 * 8, policy_size)
         )
         self.value_head = nn.Sequential(
             nn.Conv2d(channels, 1, kernel_size=1, bias=False),
@@ -65,7 +65,7 @@ class ChessModel(nn.Module):
             nn.Flatten(),
             nn.Linear(64, 128),
             nn.ReLU(inplace=True),
-            nn.Dropout(0.5),
+            nn.Dropout(head_dropout),
             nn.Linear(128, 1),
             nn.Tanh()
         )

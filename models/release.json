@@ -1,11 +1,16 @@
 {
-  "path": "legacy-cv0.pth",
-  "sha256": "20ebe44f3cb6b8aa39ccf4fa11cbeec7dd897b2a0489b59a32e010e86a76523e",
-  "policy_size": 4096,
-  "version": "legacy-cv0",
+  "path": "candidate-v2.onnx",
+  "sha256": "847fbcb0f8b8588d1986e9e6a60cbeba6918b441d9e3486cf30c239ef6f6267a",
+  "policy_size": 4272,
+  "version": "candidate-v2-489109095e51",
   "architecture": {
     "num_res_blocks": 15,
     "channels": 192
   },
-  "quality_status": "baseline-only; retraining gate pending"
+  "quality_status": "released 2026-10-09; style 43.3% vs 42.5% top-1 and value MSE 0.111 vs 0.139 on test games unseen by every model",
+  "format": "onnx",
+  "source_path": "candidate-v2.pth",
+  "source_sha256": "489109095e51d3280121df968798b7e30d1ad724ca3caf9de4aec02fcae2ed0d",
+  "book": "book.json",
+  "book_sha256": "e9f1cffacb4c8b03024b3bd7e1de0cc3329d558137ce6509bf2fe6f2a6944f1f"
 }
