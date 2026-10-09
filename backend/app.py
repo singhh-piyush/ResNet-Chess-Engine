@@ -160,7 +160,7 @@ async def offer_draw(request: DrawRequest):
 
 build = Path(os.getenv('FRONTEND_BUILD','chess-frontend/dist'))
 if (build/'index.html').is_file():
-    for name in ('assets','TakenPiecesSVG'):
+    for name in ('assets','pieces'):
         if (build/name).is_dir():
             app.mount('/'+name,StaticFiles(directory=build/name),name=name)
     @app.get('/')
