@@ -37,7 +37,7 @@ export default function MoveList({ history, view, onView, reduced, botColor }) {
         <span className={`state${reviewing ? ' on' : ''}`}>{reviewing ? `Reviewing ${current} of ${total}` : total ? `Move ${Math.floor(total / 2) + 1}` : ''}</span>
       </div>
       <ol className="list" ref={list}>
-        {!pairs.length && <li className="empty">Your moves and ResNet's appear here. Click any move to look back at it.</li>}
+        {!pairs.length && <li className="empty"><span className="wide">Your moves and ResNet's appear here. Click any move to look back at it.</span><span className="narrow">Moves will appear here</span></li>}
         {pairs.map(pair => (
           <li key={pair.number}>
             <span className="no">{pair.number}</span>

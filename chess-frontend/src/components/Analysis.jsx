@@ -139,7 +139,7 @@ function Search({ thinking, progress, search, timer, leader, stats, budget }) {
         <Tip content={`How many moves ahead the search has looked, up to ${MAX_DEPTH}.`}>
           <div tabIndex={0}>
             <dt>Depth</dt>
-            <dd>{has ? depth : '–'}<small>/{MAX_DEPTH}</small></dd>
+            <dd>{has && (thinking || !stats.book) ? depth : '–'}<small>/{MAX_DEPTH}</small></dd>
             <span className="steps" aria-hidden="true">{Array.from({ length: MAX_DEPTH }, (_, i) => <i key={i} className={has && depth > i ? 'on' : ''} />)}</span>
           </div>
         </Tip>
