@@ -114,6 +114,7 @@ class Search:
         completed = 1
         def report():
             progress({'depth':completed, 'elapsed_ms':round((time.monotonic()-self.started)*1000), 'positions':self.nodes,
+                      'preview_moves':[m.uci() for m in sorted(scores,key=scores.get,reverse=True)[:3]],
                       'message':f'Completed depth {completed}; evaluated {self.nodes} positions.'})
         report()
         if not mates:
@@ -121,6 +122,8 @@ class Search:
                 iteration = {}
                 try:
                     for move in sorted(root,key=lambda m:scores[m], reverse=True):
+                        progress({'depth':depth, 'positions':self.nodes, 'elapsed_ms':round((time.monotonic()-self.started)*1000),
+                                  'preview_moves':[move.uci()], 'message':f'Considering {board.san(move)} at depth {depth}.'})
                         board.push(move)
                         try:
                             iteration[move] = -self.negamax(board, depth-1, -math.inf, math.inf, 1)

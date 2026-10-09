@@ -88,3 +88,15 @@ def test_baseline_queen_bias():
         return
     logits=runtime.logits(board,np.zeros(4096),moves)
     assert moves[int(logits.argmax())].promotion==chess.QUEEN
+
+
+def test_live_previews_are_legal_and_preserve_position():
+    board=chess.Board(); original=board.fen(); events=[]
+    result=Search(FakeRuntime(),seconds=.05).run(board,events.append)
+    assert events
+    assert any('Considering ' in event['message'] for event in events)
+    for event in events:
+        assert 1 <= len(event['preview_moves']) <= 3
+        assert all(chess.Move.from_uci(move) in board.legal_moves for move in event['preview_moves'])
+    assert board.fen()==original
+    assert chess.Move.from_uci(result['move']) in board.legal_moves
