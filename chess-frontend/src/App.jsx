@@ -504,7 +504,6 @@ export default function App() {
               </div>
             ) : (
               <div className="about">
-                <p className="lede">I’m Piyush Singh. ResNet plays chess the way I do.</p>
                 <p>A 15-block residual network studied 3,451 of my games. For any position it estimates two things: how likely I am to play each move, and how good the position is.</p>
                 <p>In openings I know well it plays one of my usual moves straight away. Otherwise it looks ahead for up to 3 seconds, usually about one. It then picks among the moves within a pawn of the best one, favoring the ones I’d be likeliest to choose. So it sometimes prefers a move that feels like mine over the strongest one.</p>
                 <dl className="glossary">

@@ -10,7 +10,7 @@ const fade = { hidden: { opacity: 0, y: 16 }, show: { opacity: 1, y: 0, transiti
 const FACTS = [
   { value: 3451, label: 'games learned', tip: 'My games that it studied, move by move.' },
   { value: 15, label: 'residual blocks', tip: 'Layers of the network that read each position. More blocks let it pick up subtler patterns.' },
-  { value: 3, label: 'seconds per move, at most', tip: 'Its thinking limit each turn. Most moves take about a second, and familiar openings are instant.' },
+  { value: 3, label: 'seconds max', tip: 'Its thinking limit per move. Most moves take about a second, and familiar openings are instant.' },
 ];
 
 export default function Hero({ onPlay, reduced }) {
