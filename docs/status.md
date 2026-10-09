@@ -1,15 +1,12 @@
-# Backend repair status — 2026-10-09
+# Release status — 2026-10-09
 
-The cleaned backend is deployed from GitHub main to the existing free CPU Hugging Face Space. A scoped GitHub trusted publisher was configured through Chrome; no persistent HF token was added to GitHub.
+`candidate-v2` is live on the free CPU Hugging Face Space, deployed from GitHub `main` through the scoped trusted publisher. It is served as ONNX with the new search and an opening book.
 
-- Legacy source, weights, datasets, logs, generated bundles and unused starter assets are preserved under ignored `archive/`, with a checksum manifest.
-- Shared promotion-safe encoding, validated API, bounded neural search and real progress streaming are implemented.
-- The current release is the previous fold-0 baseline. It is not claimed to be a newly improved model.
-- Refreshed public archive: 3,457 games, including 3,451 unique standard games. Deterministic relabeling completed with zero errors: 206,088 positions.
-- Frozen split: 164,581 training, 20,934 validation, 20,573 test positions. Style labels: 67,190 / 8,411 / 8,389 respectively.
-- GPU training launched on the local RTX 5060 with batches of 256, early stopping and resumable checkpoints. Independent evaluation runs afterward; candidate promotion remains conditional on the quality gate and hosted verification.
-- Progress monitoring is configured in this chat. Training logs and checkpoints remain ignored locally.
+- **Model:** the 15-block network fine-tuned from the legacy fold-0 checkpoint on the 4272-action vocabulary. `legacy-cv0` stays on the Space; `models/legacy-cv0.json` is the rollback manifest.
+- **Search:** 2-second soft budget and 3-second hard cap, replacing the fixed 9.5 seconds. Book moves come from 49 positions in the last 18 months of train and validation games.
+- **Hosted latency:** 10 fresh searches on the Space took 0.65–1.50 s on the server, 1.4–2.2 s including the network round trip. Book moves answer in about 1 ms.
+- **Quality gate:** passed on 1,600 positions from the 69 test games that no model has trained on. Blunders fell from 18.0% to 16.1% (95% CI of the change −3.3 to −0.6 points). Style top-1 went from 40.1% to 40.5% (CI −1.0 to +1.8). p95 latency on two CPU threads was 2.43 s.
+- **Evaluation caveat:** `legacy-cv0` trained on 262 of the 331 frozen test games, because `GroupKFold` tie-breaking differs from the original run. Earlier figures near 73% measured memorization. See the README.
+- **K-fold and distillation:** all eight fine-tuning configs tied within noise. A from-scratch 10x128 student reached 39.8% top-1, so distillation was paused. Further style gains likely need more data, such as rating-matched Lichess games.
 
-Validation: 12 backend/training checks passed. The interface builds and the CPU-only production Docker image builds. A 12-move local production test and four-move hosted streaming test returned legal moves with history consistency. HF CPU searches took 9.50–9.53 seconds in the measured hosted run. Chrome confirmed the live interface returns the opening move when playing as Black.
-
-Seven remaining dependency advisories concern the existing Tailwind build tooling and require the frontend migration. Compatible dependency fixes were applied; the full frontend redesign remains deferred.
+Validation: 22 backend and training checks passed. The interface builds, and lint is clean. Chrome confirmed that the live landing page shows the updated stats and that the live engine plays book moves. Phone layouts were checked at 390 and 360 px.
