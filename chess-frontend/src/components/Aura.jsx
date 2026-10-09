@@ -1,52 +1,58 @@
 import { forwardRef, useEffect, useImperativeHandle, useRef } from 'react';
 
 const TAU = Math.PI * 2;
-const POINTS = 48;
-const SIZE = 220;            // internal canvas pixels; the element is 4.4 board-widths, scaled up by the GPU
-const HALF = SIZE / 4.4 / 2; // the board's half-width in canvas pixels
-const BLUR = 5;
-const HUES = [200, 232, 264, 296, 200];
+const SPAN = 1.8;            // the canvas covers 1.8 board-widths, centred on the board
+const SIZE = 240;            // internal pixels; the GPU scales the canvas up to its CSS size
+const BOARD = SIZE / SPAN;   // the board's width in canvas pixels
 
-// Three overlapping blobs, each with its own size, colour offset and rhythm. While ResNet thinks,
-// each also drifts on its own slow Lissajous path (drift: x and y reach, x and y rate, phase), so
-// the layers slide past one another like liquid instead of breathing in place. Wave and drift
-// rates are mutually irrational, so the motion never visibly repeats.
-const LAYERS = [
-  { scale: 1.12, alpha: 0.95, hue: 0, spin: 0.11, waves: [[2, 0.07, 0.31], [3, 0.05, -0.43], [5, 0.025, 0.6]], ripples: [[4, 0.035, 0.9], [7, 0.012, -1.3]], drift: [0.09, 0.07, 0.53, 0.41, 0] },
-  { scale: 1.27, alpha: 0.65, hue: 18, spin: -0.08, waves: [[2, 0.08, -0.23], [3, 0.06, 0.37], [4, 0.03, -0.52]], ripples: [[5, 0.03, -0.8], [6, 0.015, 1.1]], drift: [0.13, 0.11, -0.37, 0.61, 2.1] },
-  { scale: 1.45, alpha: 0.4, hue: 36, spin: 0.05, waves: [[2, 0.09, 0.17], [4, 0.05, -0.29], [3, 0.04, 0.41]], ripples: [[3, 0.04, 0.7], [5, 0.02, -1.0]], drift: [0.16, 0.14, 0.29, -0.47, 4.2] },
-];
-
-// Coloured masses that travel round the board's edge while ResNet thinks. They orbit in opposite
-// directions at different rates, so they meet, merge into one glow and part again, and each swells
-// and drifts in and out on its own rhythm (wobble). Idle, they sit tucked behind the board.
-const ORBS = [
-  { hue: 200, size: 0.62, orbit: 0.95, speed: 0.42, phase: 0, wobble: 0.83 },
-  { hue: 236, size: 0.55, orbit: 1.05, speed: -0.31, phase: 1.3, wobble: 1.11 },
-  { hue: 268, size: 0.7, orbit: 0.9, speed: 0.27, phase: 2.6, wobble: 0.67 },
-  { hue: 302, size: 0.5, orbit: 1.1, speed: -0.47, phase: 3.9, wobble: 1.37 },
-  { hue: 186, size: 0.58, orbit: 1, speed: 0.36, phase: 5.1, wobble: 0.94 },
-];
-
-// Part circle, part rounded square, so shapes hug the board without corners.
-const squircle = theta => {
-  const c = Math.cos(theta), s = Math.sin(theta);
-  return [c * 0.45 + Math.sign(c) * Math.sqrt(Math.abs(c)) * 0.55, s * 0.45 + Math.sign(s) * Math.sqrt(Math.abs(s)) * 0.55];
-};
-const OUTLINE = Array.from({ length: POINTS }, (_, i) => [(i / POINTS) * TAU, ...squircle((i / POINTS) * TAU)]);
+// Six soft shapes, each a little larger than the board, filled with a sweep of blue, violet,
+// magenta and cyan. Their corners morph, they rock and drift, and because the board covers
+// their middle only slivers of colour peek out past its edges, in different places as they move.
+// grow: how far each side reaches past the board; blur, alpha and period set its softness,
+// strength and rhythm; from rotates its colour sweep.
+const SHAPES = [
+  { grow: 0.03, blur: 0.04, alpha: 0.5, period: 6, from: 0, colors: ['#3b82f6', '#8b5cf6', '#d946ef', '#06b6d4'] },
+  { grow: 0.03, blur: 0.04, alpha: 0.5, period: 8, from: Math.PI, colors: ['#06b6d4', '#d946ef', '#8b5cf6', '#3b82f6'] },
+  { grow: 0.05, blur: 0.047, alpha: 0.38, period: 7, from: Math.PI / 2, colors: ['#8b5cf6', '#d946ef', '#ec4899', '#3b82f6'] },
+  { grow: 0.05, blur: 0.047, alpha: 0.38, period: 9, from: Math.PI * 1.5, colors: ['#06b6d4', '#3b82f6', '#8b5cf6'] },
+  { grow: 0.07, blur: 0.054, alpha: 0.28, period: 10, from: Math.PI / 4, colors: ['#3b82f6', '#06b6d4', '#8b5cf6'] },
+  { grow: 0.07, blur: 0.054, alpha: 0.28, period: 12, from: Math.PI * 1.25, colors: ['#d946ef', '#8b5cf6', '#3b82f6'] },
+].map((shape, i) => ({
+  ...shape,
+  seed: i * 2.39,
+  // Each corner radius morphs at its own rate, so the outline never settles into a repeating loop.
+  rates: Array.from({ length: 8 }, (_, j) => 0.7 + 0.6 * ((j * 0.618 + i * 0.31) % 1)),
+}));
 
 const ease = (value, target, rate, dt) => value + (target - value) * (1 - Math.exp(-rate * dt));
 const wrap = angle => Math.atan2(Math.sin(angle), Math.cos(angle));
 
+/** A rectangle with elliptical corners, like CSS border-radius with eight values (fractions of w and h). */
+function morphRect(ctx, w, h, r) {
+  const fit = Math.min(1, 1 / (r[0] + r[1]), 1 / (r[3] + r[2]), 1 / (r[4] + r[7]), 1 / (r[5] + r[6]));
+  const [tl, tr, br, bl] = [r[0] * fit * w, r[1] * fit * w, r[2] * fit * w, r[3] * fit * w];
+  const [tlv, trv, brv, blv] = [r[4] * fit * h, r[5] * fit * h, r[6] * fit * h, r[7] * fit * h];
+  const x = -w / 2, y = -h / 2;
+  ctx.beginPath();
+  ctx.moveTo(x + tl, y);
+  ctx.lineTo(x + w - tr, y);
+  ctx.ellipse(x + w - tr, y + trv, tr, trv, 0, -Math.PI / 2, 0);
+  ctx.lineTo(x + w, y + h - brv);
+  ctx.ellipse(x + w - br, y + h - brv, br, brv, 0, 0, Math.PI / 2);
+  ctx.lineTo(x + bl, y + h);
+  ctx.ellipse(x + bl, y + h - blv, bl, blv, 0, Math.PI / 2, Math.PI);
+  ctx.lineTo(x, y + tlv);
+  ctx.ellipse(x + tl, y + tlv, tl, tlv, 0, Math.PI, Math.PI * 1.5);
+  ctx.closePath();
+}
+
 /**
- * A soft, colour-shifting blob behind the board. Idle, it barely glows and drifts. While ResNet
- * searches it comes alive: coloured masses travel round the board, merging and parting, the
- * outline morphs on a few-second rhythm, the colours swirl and the whole thing leans toward the
- * side of the board the search is looking at. Changes ease in over a second or two, so it flows
- * like liquid rather than pulsing.
+ * A colour-shifting blob behind the board. Idle, it is a faint, slow drift. While ResNet
+ * searches it brightens and speeds up, its shapes rocking and morphing so colour slips out
+ * from different edges, and it leans toward the side of the board the search is looking at.
  *
  * It lives inside the board's box, so it follows the board with no layout reads, and it is
- * drawn on a tiny canvas that is blurred at that size and scaled up, which keeps it cheap.
+ * drawn on one small canvas that is blurred at that size and scaled up, which keeps it cheap.
  */
 const Aura = forwardRef(function Aura({ enabled, reduced, theme }, ref) {
   const canvas = useRef(null);
@@ -66,61 +72,34 @@ const Aura = forwardRef(function Aura({ enabled, reduced, theme }, ref) {
     const filter = 'filter' in ctx;
     el.classList.toggle('soft', !filter);
     const s = {
-      raf: 0, last: 0, drawn: 0, t: 0, flow: 0, swirl: 0, hue: 0, light: false, points: [],
+      raf: 0, last: 0, drawn: 0, t: 0, flow: 0, light: false,
       act: 0, target: 0, glow: 0, focus: 0, focusTarget: 0, angle: -Math.PI / 2, angleTarget: -Math.PI / 2,
     };
     const c = SIZE / 2;
+    const radii = new Array(8);
 
-    const blob = (layer, morph, alpha) => {
-      const spin = s.t * layer.spin;
-      const pts = s.points;
-      const [ax, ay, fx, fy, phase] = layer.drift;
-      const reach = HALF * (0.25 + s.act * 1.25);
-      const ox = c + reach * ax * Math.sin(s.t * fx + phase), oy = c + reach * ay * Math.sin(s.t * fy + phase * 1.3);
-      for (let i = 0; i < POINTS; i++) {
-        const [theta, ux, uy] = OUTLINE[i];
-        let wave = 0;
-        for (const [k, amp, speed] of layer.waves) wave += amp * Math.sin(k * (theta + spin) + s.t * speed);
-        // Finer ripples that only exist while thinking: they travel round the edge like a current.
-        if (s.act > 0.01) for (const [k, amp, speed] of layer.ripples) wave += s.act * amp * Math.sin(k * theta - s.t * speed + k);
-        const lean = s.focus * 0.2 * Math.max(0, Math.cos(theta - s.angle)) ** 3;
-        const radius = HALF * layer.scale * (1 + wave * morph + lean);
-        pts[i] = [ox + ux * radius, oy + uy * radius];
-      }
-      ctx.beginPath();
-      let mx = (pts[POINTS - 1][0] + pts[0][0]) / 2, my = (pts[POINTS - 1][1] + pts[0][1]) / 2;
-      ctx.moveTo(mx, my);
-      for (let i = 0; i < POINTS; i++) {
-        const a = pts[i], b = pts[(i + 1) % POINTS];
-        mx = (a[0] + b[0]) / 2; my = (a[1] + b[1]) / 2;
-        ctx.quadraticCurveTo(a[0], a[1], mx, my);
-      }
-      const base = s.hue + layer.hue * (1 + s.act * 0.8); // layers fan further apart in colour while thinking
-      const tone = s.light ? `${74 + s.act * 12}% ${62 - s.act * 4}%` : `${82 + s.act * 12}% ${56 + s.act * 4}%`;
+    const shape = (item, strength) => {
+      const w = TAU / item.period, t = s.t, k = item.seed;
+      const rotate = 0.16 * Math.sin(w * t + k) + 0.05 * Math.sin(2.3 * w * t + k * 1.7);
+      const lean = s.focus * 0.035 * BOARD;
+      const x = c + 0.032 * BOARD * Math.sin(0.9 * w * t + k * 2.1) + Math.cos(s.angle) * lean;
+      const y = c + 0.032 * BOARD * Math.sin(1.13 * w * t + k * 0.6 + 1) + Math.sin(s.angle) * lean;
+      for (let j = 0; j < 8; j++) radii[j] = 0.5 + 0.2 * Math.sin(w * item.rates[j] * t + k + j * 1.37);
+      const side = BOARD * (1 + item.grow * 2) * (0.96 + s.act * 0.04);
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.rotate(rotate);
+      if (filter) ctx.filter = `blur(${(item.blur * BOARD).toFixed(1)}px)`;
       if (conic) {
-        const fill = ctx.createConicGradient(spin * 1.6 + s.flow, ox, oy);
-        HUES.forEach((hue, i) => fill.addColorStop(i / (HUES.length - 1), `hsl(${hue + base} ${tone})`));
+        const fill = ctx.createConicGradient(item.from + s.flow, 0, 0);
+        item.colors.forEach((color, i) => fill.addColorStop(i / item.colors.length, color));
+        fill.addColorStop(1, item.colors[0]);
         ctx.fillStyle = fill;
-      } else ctx.fillStyle = `hsl(${HUES[1] + base} ${tone})`;
-      ctx.globalAlpha = alpha;
+      } else ctx.fillStyle = item.colors[1];
+      ctx.globalAlpha = item.alpha * strength;
+      morphRect(ctx, side, side, radii);
       ctx.fill();
-    };
-
-    const orb = (item, alpha, tone) => {
-      const angle = item.phase + s.swirl * item.speed;
-      const [ux, uy] = squircle(angle);
-      const dist = HALF * (item.orbit * (0.62 + s.act * 0.5) + 0.2 * Math.sin(s.t * item.wobble + item.phase));
-      const x = c + ux * dist + Math.cos(s.angle) * s.focus * HALF * 0.3;
-      const y = c + uy * dist + Math.sin(s.angle) * s.focus * HALF * 0.3;
-      const r = HALF * item.size * (0.75 + s.act * 0.55) * (1 + 0.16 * Math.sin(s.t * item.wobble * 1.3 + item.phase * 2));
-      const hue = item.hue + s.hue * 1.5;
-      const fill = ctx.createRadialGradient(x, y, 0, x, y, r);
-      fill.addColorStop(0, `hsl(${hue} ${tone} / 1)`);
-      fill.addColorStop(0.5, `hsl(${hue} ${tone} / 0.55)`);
-      fill.addColorStop(1, `hsl(${hue} ${tone} / 0)`);
-      ctx.globalAlpha = alpha;
-      ctx.fillStyle = fill;
-      ctx.fillRect(x - r, y - r, r * 2, r * 2);
+      ctx.restore();
     };
 
     const frame = (now) => {
@@ -129,27 +108,18 @@ const Aura = forwardRef(function Aura({ enabled, reduced, theme }, ref) {
       if (!busy && now - s.drawn < 33) return; // idle: 30 fps is plenty for a slow drift
       const dt = Math.min(0.05, (now - (s.last || now)) / 1000);
       s.last = now; s.drawn = now;
-      // Everything eases over seconds, never snaps: the blob should feel like slow weather.
-      s.act = ease(s.act, s.target, s.target ? 1.2 : 0.5, dt);
+      // Activity eases in and out over a second or two; the shapes speed up with it, never snap.
+      s.act = ease(s.act, s.target, s.target ? 1.1 : 0.6, dt);
       s.focus = ease(s.focus, s.focusTarget * s.target, 0.9, dt);
       s.angle += wrap(s.angleTarget - s.angle) * (1 - Math.exp(-1.1 * dt));
       s.glow = ease(s.glow, 0, 0.6, dt);
-      s.t += dt * (0.2 + s.act * 2.8);
-      s.flow += dt * (0.03 + s.act * 0.5);
-      s.swirl += dt * (0.1 + s.act * 1.2);
-      s.hue = Math.sin(s.t * 0.09) * (18 + s.act * 16);
+      s.t += dt * (0.45 + s.act * 0.55);
+      s.flow += dt * (0.04 + s.act * 0.16);
 
-      const strength = (s.light ? 0.16 + s.act * 0.46 : 0.2 + s.act * 0.55) + s.glow * 0.08;
+      const strength = (s.light ? 0.16 + s.act * 0.7 : 0.2 + s.act * 0.8) + s.glow * 0.1;
       ctx.clearRect(0, 0, SIZE, SIZE);
-      if (filter) ctx.filter = `blur(${BLUR}px)`;
-      ctx.globalCompositeOperation = s.light ? 'source-over' : 'lighter';
-      for (let i = LAYERS.length - 1; i >= 0; i--) blob(LAYERS[i], 0.6 + s.act * 1.6, LAYERS[i].alpha * strength);
-      const tone = s.light ? `${80 + s.act * 10}% 60%` : `${88 + s.act * 8}% ${58 + s.act * 4}%`;
-      const orbAlpha = (s.light ? 0.08 + s.act * 0.42 : 0.1 + s.act * 0.55) + s.glow * 0.06;
-      for (const item of ORBS) orb(item, orbAlpha, tone);
-      ctx.globalCompositeOperation = 'source-over';
+      for (let i = SHAPES.length - 1; i >= 0; i--) shape(SHAPES[i], strength);
       ctx.globalAlpha = 1;
-      if (filter) ctx.filter = 'none';
     };
 
     const run = () => {

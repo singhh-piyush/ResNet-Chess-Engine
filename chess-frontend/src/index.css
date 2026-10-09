@@ -50,7 +50,7 @@ svg { flex-shrink: 0; }
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
 /* The blob: a tiny canvas spanning 4.4 board widths behind the board, scaled up by the GPU */
-.aura { position: absolute; left: -170%; top: -170%; width: 440%; height: 440%; z-index: -1; pointer-events: none; }
+.aura { position: absolute; left: -40%; top: -40%; width: 180%; height: 180%; z-index: -1; pointer-events: none; }
 .aura.soft { filter: blur(24px); }
 .label { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 550; color: var(--muted); letter-spacing: 0.02em; border-radius: 6px; }
 .label svg { opacity: 0.55; }
